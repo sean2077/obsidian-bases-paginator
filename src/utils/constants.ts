@@ -1,0 +1,105 @@
+import type { PageSizeOption, BasesPaginatorSettings } from '../types';
+
+/**
+ * View type identifier for registration
+ */
+export const VIEW_TYPE = 'paginated-table';
+
+/**
+ * View display name shown in Bases UI
+ */
+export const VIEW_NAME = 'Paginated Table';
+
+/**
+ * View icon (Lucide icon name)
+ */
+export const VIEW_ICON = 'table-2';
+
+/**
+ * Default page size options
+ */
+export const PAGE_SIZE_OPTIONS: PageSizeOption[] = [
+	{ value: 10, label: '10' },
+	{ value: 25, label: '25' },
+	{ value: 50, label: '50' },
+	{ value: 100, label: '100' },
+	{ value: 'custom', label: 'Custom...' },
+];
+
+/**
+ * Default page size
+ */
+export const DEFAULT_PAGE_SIZE = 25;
+
+/**
+ * Search debounce delay in milliseconds
+ */
+export const SEARCH_DEBOUNCE_MS = 300;
+
+/**
+ * Default plugin settings
+ */
+export const DEFAULT_SETTINGS: BasesPaginatorSettings = {
+	defaultPageSize: DEFAULT_PAGE_SIZE,
+	showSearchBox: true,
+	enableQuickFilters: true,
+	showFilterBar: true,
+	stickyHeader: true,
+};
+
+/**
+ * CSS class prefix for all plugin elements
+ */
+export const CSS_PREFIX = 'bp';
+
+/**
+ * CSS classes used throughout the plugin
+ */
+export const CSS_CLASSES = {
+	// Container
+	container: `${CSS_PREFIX}-container`,
+
+	// Filter bar
+	filterBar: `${CSS_PREFIX}-filter-bar`,
+	searchSection: `${CSS_PREFIX}-search-section`,
+	searchInput: `${CSS_PREFIX}-search-input`,
+	activeFilters: `${CSS_PREFIX}-active-filters`,
+	presetSection: `${CSS_PREFIX}-preset-section`,
+	clearFiltersBtn: `${CSS_PREFIX}-clear-filters-btn`,
+
+	// Filter chip
+	filterChip: `${CSS_PREFIX}-filter-chip`,
+	filterChipLabel: `${CSS_PREFIX}-filter-chip-label`,
+	filterChipRemove: `${CSS_PREFIX}-filter-chip-remove`,
+
+	// Table
+	tableContainer: `${CSS_PREFIX}-table-container`,
+	table: `${CSS_PREFIX}-table`,
+	tableHeader: `${CSS_PREFIX}-table-header`,
+	tableHeaderSticky: `${CSS_PREFIX}-table-header-sticky`,
+	tableRow: `${CSS_PREFIX}-table-row`,
+	tableCell: `${CSS_PREFIX}-table-cell`,
+	tableCellFilterable: `${CSS_PREFIX}-table-cell-filterable`,
+	tableCellEmpty: `${CSS_PREFIX}-table-cell-empty`,
+	tag: `${CSS_PREFIX}-tag`,
+	boolTrue: `${CSS_PREFIX}-bool-true`,
+	boolFalse: `${CSS_PREFIX}-bool-false`,
+
+	// Pagination bar
+	paginationBar: `${CSS_PREFIX}-pagination-bar`,
+	paginationBtn: `${CSS_PREFIX}-pagination-btn`,
+	paginationBtnDisabled: `${CSS_PREFIX}-pagination-btn-disabled`,
+	pageInfo: `${CSS_PREFIX}-page-info`,
+	itemInfo: `${CSS_PREFIX}-item-info`,
+	pageSizeSelector: `${CSS_PREFIX}-page-size-selector`,
+
+	// Empty state
+	emptyState: `${CSS_PREFIX}-empty-state`,
+
+	// Preset selector
+	presetSelector: `${CSS_PREFIX}-preset-selector`,
+	presetDropdown: `${CSS_PREFIX}-preset-dropdown`,
+	presetItem: `${CSS_PREFIX}-preset-item`,
+	presetItemActive: `${CSS_PREFIX}-preset-item-active`,
+	savePresetBtn: `${CSS_PREFIX}-save-preset-btn`,
+} as const;

@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "bases-paginator",
+	"name": "Bases Paginator",
 	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"minAppVersion": "1.10.0",
+	"description": "Adds a paginated table view with quick filtering to Obsidian Bases. Features include pagination controls, global search, click-to-filter, and filter presets.",
+	"author": "sean2077",
+	"authorUrl": "https://github.com/sean2077",
 	"isDesktopOnly": false
 }

@@ -1,90 +1,83 @@
-# Obsidian Sample Plugin
+# Bases Paginator
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view with quick filtering capabilities to Obsidian Bases.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+> **Note:** Requires Obsidian v1.10.0+ with the Bases core plugin enabled.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open modal (simple)" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## Features
 
-## First time developing plugins?
+### Pagination
+- Navigate through large datasets with ease
+- Preset page sizes: 10, 25, 50, 100 items per page
+- Custom page size input support
+- First/Previous/Next/Last page navigation
+- Display current page and total item count
 
-Quick starting guide for new plugin devs:
+### Quick Filtering
+- **Global Search**: Real-time search across all visible columns
+- **Click-to-Filter**: Click any cell value to instantly filter by that value
+- **Filter Chips**: Visual tags showing active filters with one-click removal
+- **Clear All**: Remove all filters with a single click
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+### Filter Presets
+- Save frequently used filter combinations
+- Quick preset selector dropdown
+- Presets are stored per-view in your `.base` file
 
-## Releasing new releases
+### Full Compatibility
+- Inherits native Bases sorting and grouping
+- Respects column visibility settings
+- Works with all property types (text, number, date, boolean, tags, links)
+- Adapts to light and dark themes
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+## Usage
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+1. Open any `.base` file in Obsidian
+2. Click the view switcher in the toolbar
+3. Select **"Paginated Table"** from the view options
+4. Configure view options:
+   - Items per page
+   - Toggle search box
+   - Enable/disable click-to-filter
+   - Show/hide filter bar
+   - Sticky header
 
-## Adding your plugin to the community plugin list
+## Installation
 
-- Check the [plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines).
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+### From Community Plugins (Coming Soon)
+1. Open Obsidian Settings
+2. Go to Community Plugins
+3. Search for "Bases Paginator"
+4. Click Install, then Enable
 
-## How to use
+### Manual Installation
+1. Download `main.js`, `styles.css`, and `manifest.json` from the latest release
+2. Create folder: `VaultFolder/.obsidian/plugins/bases-paginator/`
+3. Copy the downloaded files into the folder
+4. Reload Obsidian
+5. Enable the plugin in Settings > Community Plugins
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+## Development
 
-## Manually installing the plugin
+```bash
+# Install dependencies
+npm install
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+# Development mode (watch)
+npm run dev
 
-## Improve code quality with eslint
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- This project already has eslint preconfigured, you can invoke a check by running`npm run lint`
-- Together with a custom eslint [plugin](https://github.com/eslint-plugin) for Obsidan specific code guidelines.
-- A GitHub action is preconfigured to automatically lint every commit on all branches.
+# Production build
+npm run build
 
-## Funding URL
-
-You can include funding URLs where people who use your plugin can financially support it.
-
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
+# Lint code
+npm run lint
 ```
 
-If you have multiple URLs, you can also do:
+## Requirements
 
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
+- Obsidian v1.10.0 or higher
+- Bases core plugin enabled
 
-## API Documentation
+## License
 
-See https://docs.obsidian.md
+MIT
