@@ -66,13 +66,13 @@ views:
 
 ### View Options Reference
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `pageSize` | string | `"25"` | Items per page (`"10"`, `"25"`, `"50"`, `"100"`) |
-| `showSearchBox` | boolean | `true` | Show global search input |
-| `enableQuickFilters` | boolean | `true` | Enable click-to-filter on cells |
-| `showFilterBar` | boolean | `true` | Show filter bar with search and presets |
-| `stickyHeader` | boolean | `true` | Keep table header visible when scrolling |
+| Option               | Type    | Default | Description                                      |
+| -------------------- | ------- | ------- | ------------------------------------------------ |
+| `pageSize`           | string  | `"25"`  | Items per page (`"10"`, `"25"`, `"50"`, `"100"`) |
+| `showSearchBox`      | boolean | `true`  | Show global search input                         |
+| `enableQuickFilters` | boolean | `true`  | Enable click-to-filter on cells                  |
+| `showFilterBar`      | boolean | `true`  | Show filter bar with search and presets          |
+| `stickyHeader`       | boolean | `true`  | Keep table header visible when scrolling         |
 
 ### Embedding Base Views
 
@@ -122,4 +122,4 @@ npm run lint
 
 ## License
 
-MIT
+See [LICENSE](./LICENSE).

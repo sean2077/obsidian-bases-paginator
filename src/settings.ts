@@ -2,6 +2,7 @@ import { App, PluginSettingTab, Setting } from 'obsidian';
 import type BasesPaginatorPlugin from './main';
 import type { BasesPaginatorSettings } from './types';
 import { DEFAULT_SETTINGS, PAGE_SIZE_OPTIONS } from './utils/constants';
+import { VERSION } from './version';
 
 export { DEFAULT_SETTINGS };
 export type { BasesPaginatorSettings };
@@ -89,5 +90,14 @@ export class BasesPaginatorSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				});
 			});
+
+		// Version info
+		new Setting(containerEl)
+			.setName('About')
+			.setHeading();
+
+		new Setting(containerEl)
+			.setName('Version')
+			.setDesc(`Bases Paginator v${VERSION}`);
 	}
 }

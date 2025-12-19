@@ -1,0 +1,42 @@
+name: Release
+
+on:
+    push:
+        branches:
+            - main
+            - master
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0 # semantic-release needs full git history
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "lts/*"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Semantic Release
+              uses: cycjimmy/semantic-release-action@v6
+              id: semantic
+              with:
+                  extra_plugins: |
+                      @semantic-release/changelog
+                      @semantic-release/git
+                      @semantic-release/exec
+                      conventional-changelog-conventionalcommits
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
