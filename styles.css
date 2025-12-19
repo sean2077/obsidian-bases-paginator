@@ -66,36 +66,6 @@
 	background: var(--background-modifier-hover);
 }
 
-/* ========== Filter Chip ========== */
-.bp-filter-chip {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 2px 8px;
-	border-radius: 12px;
-	background: var(--interactive-accent);
-	color: var(--text-on-accent);
-	font-size: 0.85em;
-	white-space: nowrap;
-}
-
-.bp-filter-chip-label {
-	max-width: 200px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.bp-filter-chip-remove {
-	cursor: pointer;
-	opacity: 0.7;
-	font-weight: bold;
-	margin-left: 2px;
-}
-
-.bp-filter-chip-remove:hover {
-	opacity: 1;
-}
-
 /* ========== Preset Selector ========== */
 .bp-preset-section {
 	display: flex;
@@ -205,6 +175,34 @@
 	color: var(--interactive-accent);
 }
 
+/* ========== Column Filter Button ========== */
+.bp-column-filter-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px;
+	margin-left: 4px;
+	border-radius: 3px;
+	opacity: 0.4;
+	cursor: pointer;
+	transition: opacity 0.1s ease, background-color 0.1s ease;
+}
+
+.bp-column-filter-btn:hover {
+	opacity: 1;
+	background: var(--background-modifier-hover);
+}
+
+.bp-column-filter-btn svg {
+	width: 12px;
+	height: 12px;
+}
+
+.bp-column-filter-btn.bp-column-filter-active {
+	opacity: 1;
+	color: var(--interactive-accent);
+}
+
 .bp-table-header-sticky {
 	position: sticky;
 	top: 0;
@@ -235,50 +233,9 @@
 	vertical-align: middle;
 }
 
-.bp-table-cell-filterable {
-	cursor: pointer;
-}
-
-.bp-table-cell-filterable:hover {
-	text-decoration: underline;
-	color: var(--interactive-accent);
-}
-
 .bp-table-cell-empty {
 	color: var(--text-faint);
 	font-style: italic;
-}
-
-/* ========== Cell Value Types ========== */
-.bp-list-cell {
-	list-style: disc;
-	margin: 0;
-	padding-left: 1.2em;
-}
-
-.bp-list-cell li {
-	padding: 1px 0;
-}
-
-.bp-list-cell li::marker {
-	color: var(--text-accent);
-}
-
-.bp-tag {
-	display: inline-block;
-	padding: 2px 6px;
-	margin: 1px 2px;
-	border-radius: 4px;
-	background: var(--background-modifier-border);
-	font-size: 0.85em;
-}
-
-.bp-bool-true {
-	color: var(--text-success);
-}
-
-.bp-bool-false {
-	color: var(--text-error);
 }
 
 /* ========== Pagination Bar ========== */

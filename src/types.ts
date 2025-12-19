@@ -1,4 +1,4 @@
-import type { BasesPropertyId, TFile } from 'obsidian';
+import type { BasesPropertyId } from 'obsidian';
 
 /**
  * Quick filter applied by clicking a cell value
@@ -82,11 +82,21 @@ export interface SortState {
  * Table renderer options
  */
 export interface TableRendererOptions {
-	enableQuickFilters: boolean;
 	stickyHeader: boolean;
-	onCellClick: (propertyId: BasesPropertyId, value: string) => void;
-	onRowClick: (file: TFile) => void;
+	filterableColumns: BasesPropertyId[];
+	columnFilterData: Map<BasesPropertyId, string[]>;
+	selectedColumnFilters: Map<BasesPropertyId, string[]>;
 	onSort: (propertyId: BasesPropertyId, direction: SortDirection) => void;
+	onColumnFilterChange: (propertyId: BasesPropertyId, values: string[]) => void;
+	onToggleFilterable?: (propertyId: BasesPropertyId, enable: boolean) => void;
+}
+
+/**
+ * Column filter state (multi-select)
+ */
+export interface ColumnFilter {
+	propertyId: BasesPropertyId;
+	values: string[];
 }
 
 /**
@@ -131,7 +141,6 @@ export interface PageSizeOption {
 export interface BasesPaginatorSettings {
 	defaultPageSize: number;
 	showSearchBox: boolean;
-	enableQuickFilters: boolean;
 	showFilterBar: boolean;
 	stickyHeader: boolean;
 }

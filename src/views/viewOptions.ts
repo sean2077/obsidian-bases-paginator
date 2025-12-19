@@ -26,11 +26,12 @@ export function getViewOptions(): ViewOption[] {
 			displayName: 'Show search box',
 		} as ViewOption,
 
-		// Enable quick filters toggle
+		// Filterable columns (multi-text input)
 		{
-			type: 'toggle',
-			key: 'enableQuickFilters',
-			displayName: 'Enable click-to-filter',
+			type: 'multitext',
+			key: 'filterableColumns',
+			displayName: 'Filterable columns',
+			default: [],
 		} as ViewOption,
 
 		// Show filter bar toggle
@@ -66,7 +67,7 @@ export function getViewOptions(): ViewOption[] {
 export const VIEW_OPTION_DEFAULTS = {
 	pageSize: String(DEFAULT_PAGE_SIZE),
 	showSearchBox: true,
-	enableQuickFilters: true,
+	filterableColumns: [] as string[],
 	showFilterBar: true,
 	stickyHeader: true,
 	filterPresets: '[]',

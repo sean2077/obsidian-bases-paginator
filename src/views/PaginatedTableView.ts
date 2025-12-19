@@ -4,11 +4,10 @@ import {
 	type BasesEntry,
 	type BasesPropertyId,
 	type QueryController,
-	type TFile,
 	type ViewOption,
 } from 'obsidian';
 
-import type { QuickFilter, SortDirection, SortState } from '../types';
+import type { SortDirection, SortState, BasesPaginatorSettings } from '../types';
 import { valueToString } from '../utils/helpers';
 import { VIEW_TYPE, CSS_CLASSES, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { PaginationService } from '../services/PaginationService';
@@ -26,6 +25,7 @@ export class PaginatedTableView extends BasesView {
 
 	private _app: App;
 	private _containerEl: HTMLElement;
+	private _getSettings: () => BasesPaginatorSettings;
 	private filterBarEl!: HTMLElement;
 	private tableContainerEl!: HTMLElement;
 	private paginationBarEl!: HTMLElement;
@@ -44,10 +44,11 @@ export class PaginatedTableView extends BasesView {
 
 	private initialized = false;
 
-	constructor(app: App, controller: QueryController, containerEl: HTMLElement) {
+	constructor(app: App, controller: QueryController, containerEl: HTMLElement, getSettings: () => BasesPaginatorSettings) {
 		super(controller);
 		this._app = app;
 		this._containerEl = containerEl;
+		this._getSettings = getSettings;
 
 		// Initialize services
 		this.paginationService = new PaginationService(() => this.onStateChange());
@@ -144,16 +145,18 @@ export class PaginatedTableView extends BasesView {
 			this.tableContainerEl,
 			this.config,
 			{
-				enableQuickFilters: this.getConfigBool('enableQuickFilters', VIEW_OPTION_DEFAULTS.enableQuickFilters),
 				stickyHeader: this.getConfigBool('stickyHeader', VIEW_OPTION_DEFAULTS.stickyHeader),
-				onCellClick: (propId, value) => {
-					this.addQuickFilter(propId, value);
-				},
-				onRowClick: (file) => {
-					this.openFile(file);
-				},
+				filterableColumns: this.getFilterableColumns(),
+				columnFilterData: new Map(),
+				selectedColumnFilters: new Map(),
 				onSort: (propId, direction) => {
 					this.handleSort(propId, direction);
+				},
+				onColumnFilterChange: (propId, values) => {
+					this.filterService.setColumnFilter(propId, values);
+				},
+				onToggleFilterable: (propId, enable) => {
+					this.toggleFilterableColumn(propId, enable);
 				},
 			}
 		);
@@ -226,6 +229,17 @@ export class PaginatedTableView extends BasesView {
 		const allEntries = this.data.data;
 		const properties = this.getVisibleProperties();
 
+		// Get filterable columns and extract unique values BEFORE filtering
+		const filterableColumns = this.getFilterableColumns();
+		const columnFilterData = this.extractUniqueValues(allEntries, filterableColumns);
+
+		// Update table renderer options with filter data
+		this.tableRenderer.updateOptions({
+			filterableColumns,
+			columnFilterData,
+			selectedColumnFilters: this.filterService.getColumnFilters(),
+		});
+
 		// Apply filters
 		const filteredEntries = this.filterService.filterEntries(allEntries);
 
@@ -264,15 +278,59 @@ export class PaginatedTableView extends BasesView {
 	}
 
 	/**
-	 * Add a quick filter
+	 * Get filterable columns from config
 	 */
-	private addQuickFilter(propertyId: BasesPropertyId, value: string): void {
-		const filter: QuickFilter = {
-			propertyId,
-			value,
-			operator: 'equals',
-		};
-		this.filterService.addQuickFilter(filter);
+	private getFilterableColumns(): BasesPropertyId[] {
+		if (!this.config) return [];
+		const value = this.config.get('filterableColumns');
+		if (!value) return [];
+
+		// Handle both string[] (multitext) and string (legacy) formats
+		if (Array.isArray(value)) {
+			return value.filter((s) => s && s.length > 0) as BasesPropertyId[];
+		}
+		if (typeof value === 'string' && value !== '') {
+			return value.split(',').map((s) => s.trim()).filter((s) => s.length > 0) as BasesPropertyId[];
+		}
+		return [];
+	}
+
+	/**
+	 * Extract unique values for each filterable column
+	 */
+	private extractUniqueValues(entries: BasesEntry[], filterableColumns: BasesPropertyId[]): Map<BasesPropertyId, string[]> {
+		const result = new Map<BasesPropertyId, string[]>();
+
+		for (const propId of filterableColumns) {
+			const uniqueValues = new Set<string>();
+
+			for (const entry of entries) {
+				const value = entry.getValue(propId);
+				if (value === null || value === undefined) {
+					continue;
+				}
+
+				// Handle arrays (like tags)
+				if (Array.isArray(value)) {
+					for (const item of value) {
+						const strVal = valueToString(item);
+						if (strVal && strVal !== 'null') {
+							uniqueValues.add(strVal);
+						}
+					}
+				} else {
+					const strVal = valueToString(value);
+					if (strVal && strVal !== 'null') {
+						uniqueValues.add(strVal);
+					}
+				}
+			}
+
+			// Sort values alphabetically
+			result.set(propId, Array.from(uniqueValues).sort());
+		}
+
+		return result;
 	}
 
 	/**
@@ -284,6 +342,34 @@ export class PaginatedTableView extends BasesView {
 
 		// Reset to first page and re-render
 		this.paginationService.resetToFirst();
+		this.renderData();
+	}
+
+	/**
+	 * Toggle filterable state for a column
+	 */
+	private toggleFilterableColumn(propertyId: BasesPropertyId, enable: boolean): void {
+		const currentColumns = this.getFilterableColumns();
+		let newColumns: string[];
+
+		if (enable) {
+			// Add column if not already present
+			if (!currentColumns.includes(propertyId)) {
+				newColumns = [...currentColumns, propertyId];
+			} else {
+				return; // Already enabled
+			}
+		} else {
+			// Remove column
+			newColumns = currentColumns.filter((col) => col !== propertyId);
+			// Also clear any active filters for this column
+			this.filterService.setColumnFilter(propertyId, []);
+		}
+
+		// Save to config
+		this.config.set('filterableColumns', newColumns);
+
+		// Re-render to update UI
 		this.renderData();
 	}
 
@@ -332,13 +418,6 @@ export class PaginatedTableView extends BasesView {
 
 		// Fallback to string comparison using safe conversion
 		return valueToString(a).localeCompare(valueToString(b));
-	}
-
-	/**
-	 * Open a file in a new leaf
-	 */
-	private openFile(file: TFile): void {
-		void this._app.workspace.getLeaf().openFile(file);
 	}
 
 	/**

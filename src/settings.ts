@@ -55,18 +55,6 @@ export class BasesPaginatorSettingTab extends PluginSettingTab {
 				});
 			});
 
-		// Enable quick filters
-		new Setting(containerEl)
-			.setName('Enable quick filters')
-			.setDesc('Allow clicking on cell values to filter by that value')
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.enableQuickFilters);
-				toggle.onChange(async (value) => {
-					this.plugin.settings.enableQuickFilters = value;
-					await this.plugin.saveSettings();
-				});
-			});
-
 		// Show filter bar
 		new Setting(containerEl)
 			.setName('Show filter bar')

@@ -42,7 +42,6 @@ export const SEARCH_DEBOUNCE_MS = 300;
 export const DEFAULT_SETTINGS: BasesPaginatorSettings = {
 	defaultPageSize: DEFAULT_PAGE_SIZE,
 	showSearchBox: true,
-	enableQuickFilters: true,
 	showFilterBar: true,
 	stickyHeader: true,
 };
@@ -67,11 +66,6 @@ export const CSS_CLASSES = {
 	presetSection: `${CSS_PREFIX}-preset-section`,
 	clearFiltersBtn: `${CSS_PREFIX}-clear-filters-btn`,
 
-	// Filter chip
-	filterChip: `${CSS_PREFIX}-filter-chip`,
-	filterChipLabel: `${CSS_PREFIX}-filter-chip-label`,
-	filterChipRemove: `${CSS_PREFIX}-filter-chip-remove`,
-
 	// Table
 	tableContainer: `${CSS_PREFIX}-table-container`,
 	table: `${CSS_PREFIX}-table`,
@@ -83,13 +77,7 @@ export const CSS_CLASSES = {
 	sortIndicator: `${CSS_PREFIX}-sort-indicator`,
 	tableRow: `${CSS_PREFIX}-table-row`,
 	tableCell: `${CSS_PREFIX}-table-cell`,
-	tableCellFilterable: `${CSS_PREFIX}-table-cell-filterable`,
 	tableCellEmpty: `${CSS_PREFIX}-table-cell-empty`,
-	fileNameLink: `${CSS_PREFIX}-file-name-link`,
-	listCell: `${CSS_PREFIX}-list-cell`,
-	tag: `${CSS_PREFIX}-tag`,
-	boolTrue: `${CSS_PREFIX}-bool-true`,
-	boolFalse: `${CSS_PREFIX}-bool-false`,
 
 	// Pagination bar
 	paginationBar: `${CSS_PREFIX}-pagination-bar`,
@@ -105,9 +93,6 @@ export const CSS_CLASSES = {
 
 	// Preset selector
 	presetSelector: `${CSS_PREFIX}-preset-selector`,
-	presetDropdown: `${CSS_PREFIX}-preset-dropdown`,
-	presetItem: `${CSS_PREFIX}-preset-item`,
-	presetItemActive: `${CSS_PREFIX}-preset-item-active`,
 	savePresetBtn: `${CSS_PREFIX}-save-preset-btn`,
 	presetNameInput: `${CSS_PREFIX}-preset-name-input`,
 

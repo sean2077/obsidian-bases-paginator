@@ -1,7 +1,8 @@
-import { setIcon, TFile, type App, type BasesEntry, type BasesPropertyId, type BasesViewConfig } from 'obsidian';
+import { Menu, setIcon, TFile, Value, type App, type BasesEntry, type BasesPropertyId, type BasesViewConfig } from 'obsidian';
 import type { SortDirection, SortState, TableRendererOptions } from '../types';
 import { CSS_CLASSES } from '../utils/constants';
 import { valueToString as safeValueToString } from '../utils/helpers';
+import { ColumnFilterMenu } from './ColumnFilterMenu';
 
 /**
  * Table rendering component
@@ -104,9 +105,119 @@ export class TableRenderer {
 				setIcon(sortIndicator, 'chevrons-up-down');
 			}
 
-			// Click to sort
-			th.addEventListener('click', () => this.handleHeaderClick(propId));
+			// Add filter icon if this column is filterable
+			if (this.options.filterableColumns.includes(propId)) {
+				this.addFilterIcon(headerContent, propId);
+			}
+
+			// Click to sort (on header, not on filter icon)
+			th.addEventListener('click', (e) => {
+				// Don't sort if clicking on filter icon
+				const target = e.target as HTMLElement;
+				if (!target.closest('.bp-column-filter-btn')) {
+					this.handleHeaderClick(propId);
+				}
+			});
+
+			// Right-click context menu
+			th.addEventListener('contextmenu', (e) => {
+				e.preventDefault();
+				this.showHeaderContextMenu(e, propId);
+			});
 		}
+	}
+
+	/**
+	 * Show context menu for column header
+	 */
+	private showHeaderContextMenu(event: MouseEvent, propId: BasesPropertyId): void {
+		const menu = new Menu();
+		const isFilterable = this.options.filterableColumns.includes(propId);
+
+		// Sort options
+		menu.addItem((item) => {
+			item.setTitle('Sort ascending')
+				.setIcon('chevron-up')
+				.onClick(() => {
+					this.sortState = { propertyId: propId, direction: 'ASC' };
+					this.options.onSort(propId, 'ASC');
+				});
+		});
+
+		menu.addItem((item) => {
+			item.setTitle('Sort descending')
+				.setIcon('chevron-down')
+				.onClick(() => {
+					this.sortState = { propertyId: propId, direction: 'DESC' };
+					this.options.onSort(propId, 'DESC');
+				});
+		});
+
+		menu.addSeparator();
+
+		// Filter toggle option
+		if (this.options.onToggleFilterable) {
+			menu.addItem((item) => {
+				item.setTitle(isFilterable ? 'Disable column filter' : 'Enable column filter')
+					.setIcon(isFilterable ? 'filter-x' : 'filter')
+					.onClick(() => {
+						this.options.onToggleFilterable?.(propId, !isFilterable);
+					});
+			});
+		}
+
+		// If filterable, show filter menu option
+		if (isFilterable) {
+			menu.addItem((item) => {
+				item.setTitle('Filter values...')
+					.setIcon('list-filter')
+					.onClick(() => {
+						this.showFilterMenu(event, propId);
+					});
+			});
+		}
+
+		menu.showAtMouseEvent(event);
+	}
+
+	/**
+	 * Add filter icon to column header
+	 */
+	private addFilterIcon(container: HTMLElement, propId: BasesPropertyId): void {
+		const selectedFilters = this.options.selectedColumnFilters.get(propId) || [];
+		const hasActiveFilter = selectedFilters.length > 0;
+
+		const filterBtn = container.createSpan({ cls: 'bp-column-filter-btn' });
+		setIcon(filterBtn, 'filter');
+
+		if (hasActiveFilter) {
+			filterBtn.addClass('bp-column-filter-active');
+		}
+
+		filterBtn.addEventListener('click', (e) => {
+			e.stopPropagation(); // Prevent sort from triggering
+			this.showFilterMenu(e, propId);
+		});
+	}
+
+	/**
+	 * Show filter menu for a column
+	 */
+	private showFilterMenu(event: MouseEvent, propId: BasesPropertyId): void {
+		const uniqueValues = this.options.columnFilterData.get(propId) || [];
+		const selectedValues = this.options.selectedColumnFilters.get(propId) || [];
+
+		const menu = new ColumnFilterMenu({
+			propertyId: propId,
+			displayName: this.config.getDisplayName(propId),
+			uniqueValues,
+			selectedValues,
+			onFilterChange: (values) => {
+				this.options.onColumnFilterChange(propId, values);
+			},
+		});
+
+		menu.show(event);
 	}
 
 	/**
@@ -153,14 +264,7 @@ export class TableRenderer {
 			// Set file path as data attribute
 			row.dataset.filePath = entry.file.path;
 
-			// Click to open file
-			row.addEventListener('click', (e) => {
-				const target = e.target as HTMLElement;
-				// Don't open file if clicking on a filterable cell
-				if (!target.hasClass(CSS_CLASSES.tableCellFilterable)) {
-					this.options.onRowClick(entry.file);
-				}
-			});
+			// No row click event - let cell content handle its own interactions
 
 			for (const propId of this.properties) {
 				const td = row.createEl('td', {
@@ -196,7 +300,7 @@ export class TableRenderer {
 	}
 
 	/**
-	 * Render a cell value
+	 * Render a cell value using Bases' native Value.renderTo() method
 	 */
 	private renderCellValue(
 		td: HTMLElement,
@@ -204,7 +308,7 @@ export class TableRenderer {
 		value: unknown,
 		file?: TFile
 	): void {
-		// Handle empty values (null, undefined, empty string, literal "null", empty array)
+		// Handle empty values
 		if (this.isEmptyValue(value)) {
 			td.addClass(CSS_CLASSES.tableCellEmpty);
 			td.setText('-');
@@ -215,7 +319,7 @@ export class TableRenderer {
 		if (propId === 'file.name' && file) {
 			const link = td.createEl('a', {
 				text: safeValueToString(value),
-				cls: `internal-link ${CSS_CLASSES.fileNameLink}`,
+				cls: 'internal-link',
 				attr: { 'data-href': file.path },
 			});
 			link.addEventListener('click', (e) => {
@@ -223,7 +327,6 @@ export class TableRenderer {
 				e.stopPropagation();
 				void this.app.workspace.getLeaf().openFile(file);
 			});
-			// Add hover preview
 			link.addEventListener('mouseover', (e) => {
 				this.app.workspace.trigger('hover-link', {
 					event: e,
@@ -236,181 +339,20 @@ export class TableRenderer {
 			return;
 		}
 
-		// Make cell filterable if enabled
-		if (this.options.enableQuickFilters) {
-			td.addClass(CSS_CLASSES.tableCellFilterable);
-			td.addEventListener('click', (e) => {
-				e.stopPropagation();
-				this.options.onCellClick(propId, this.valueToString(value));
-			});
-		}
-
-		// Render based on type
-		if (typeof value === 'boolean') {
-			td.createEl('span', {
-				text: value ? '✓' : '✗',
-				cls: value ? CSS_CLASSES.boolTrue : CSS_CLASSES.boolFalse,
-			});
-		} else if (value instanceof Date) {
-			td.setText(value.toLocaleDateString());
-		} else if (this.isListValue(value)) {
-			const items = this.extractListItems(value);
-			const list = td.createEl('ul', { cls: CSS_CLASSES.listCell });
-			for (const item of items) {
-				const li = list.createEl('li');
-				const itemStr = String(item);
-				// Check if item contains wikilinks
-				if (itemStr.includes('[[')) {
-					this.renderTextWithLinks(li, itemStr);
-				} else {
-					li.setText(itemStr);
-				}
-			}
-		} else if (typeof value === 'object' && value !== null && 'path' in value) {
-			// Handle file links
-			const fileLink = value as { path: string; display?: string };
-			const link = td.createEl('a', {
-				text: fileLink.display ?? fileLink.path,
-				cls: 'internal-link',
-			});
-			link.addEventListener('click', (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				const targetFile = this.app.vault.getAbstractFileByPath(fileLink.path);
-				if (targetFile instanceof TFile) {
-					void this.app.workspace.getLeaf().openFile(targetFile);
-				}
-			});
-			// Add hover preview for file links
-			link.addEventListener('mouseover', (e) => {
-				this.app.workspace.trigger('hover-link', {
-					event: e,
-					source: 'bases-paginator',
-					hoverParent: td,
-					targetEl: link,
-					linktext: fileLink.path,
-				});
-			});
+		// Use Bases' native Value.renderTo() for rendering
+		if (value instanceof Value) {
+			value.renderTo(td, this.app.renderContext);
 		} else {
-			// Check if it's a string with wikilinks
-			const strValue = String(value);
-			if (strValue.includes('[[')) {
-				this.renderTextWithLinks(td, strValue);
-			} else {
-				td.setText(strValue);
-			}
+			// Fallback for non-Value types
+			td.setText(safeValueToString(value));
 		}
 	}
 
 	/**
-	 * Render text that may contain wikilinks [[link]] or [[link|display]]
+	 * Update options (for dynamic filter data updates)
 	 */
-	private renderTextWithLinks(container: HTMLElement, text: string): void {
-		// Regex to match wikilinks: [[path]] or [[path|display]]
-		const wikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-
-		let lastIndex = 0;
-		let match;
-
-		while ((match = wikiLinkRegex.exec(text)) !== null) {
-			// Add text before the link
-			if (match.index > lastIndex) {
-				container.appendText(text.slice(lastIndex, match.index));
-			}
-
-			const linkPath = match[1]?.trim() ?? '';
-			const displayText = match[2]?.trim() ?? linkPath;
-
-			// Create the link
-			const link = container.createEl('a', {
-				text: displayText,
-				cls: 'internal-link',
-				attr: { 'data-href': linkPath },
-			});
-
-			link.addEventListener('click', (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				// Try to find and open the file
-				const file = this.app.metadataCache.getFirstLinkpathDest(linkPath, '');
-				if (file) {
-					void this.app.workspace.getLeaf().openFile(file);
-				}
-			});
-
-			// Add hover preview
-			link.addEventListener('mouseover', (e) => {
-				this.app.workspace.trigger('hover-link', {
-					event: e,
-					source: 'bases-paginator',
-					hoverParent: container,
-					targetEl: link,
-					linktext: linkPath,
-				});
-			});
-
-			lastIndex = match.index + match[0].length;
-		}
-
-		// Add remaining text after the last link
-		if (lastIndex < text.length) {
-			container.appendText(text.slice(lastIndex));
-		}
-	}
-
-	/**
-	 * Check if a value is a list (array or array-like object from Bases API)
-	 */
-	private isListValue(value: unknown): boolean {
-		if (Array.isArray(value)) return true;
-
-		if (typeof value !== 'object' || value === null) return false;
-
-		// Check for Bases ListValue - has 'data' property that is an array (icon: "lucide-list")
-		if ('data' in value && Array.isArray((value as { data: unknown }).data)) {
-			return true;
-		}
-
-		// Check for Bases ListValue - has 'values' property that is an array
-		if ('values' in value && Array.isArray((value as { values: unknown }).values)) {
-			return true;
-		}
-
-		return false;
-	}
-
-	/**
-	 * Extract items from a list value
-	 */
-	private extractListItems(value: unknown): unknown[] {
-		if (Array.isArray(value)) return value;
-
-		if (typeof value !== 'object' || value === null) return [];
-
-		// Handle Bases ListValue with 'data' property
-		if ('data' in value) {
-			const listValue = value as { data: unknown };
-			if (Array.isArray(listValue.data)) {
-				return listValue.data;
-			}
-		}
-
-		// Handle Bases ListValue with 'values' property
-		if ('values' in value) {
-			const listValue = value as { values: unknown };
-			if (Array.isArray(listValue.values)) {
-				return listValue.values;
-			}
-		}
-
-		return [];
-	}
-
-	/**
-	 * Convert value to string for filtering
-	 */
-	private valueToString(value: unknown): string {
-		return safeValueToString(value);
+	updateOptions(options: Partial<TableRendererOptions>): void {
+		this.options = { ...this.options, ...options };
 	}
 
 	/**

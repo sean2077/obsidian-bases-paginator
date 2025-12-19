@@ -27,34 +27,6 @@ export class PaginationService {
 	}
 
 	/**
-	 * Get current page number
-	 */
-	getCurrentPage(): number {
-		return this.state.currentPage;
-	}
-
-	/**
-	 * Get page size
-	 */
-	getPageSize(): number {
-		return this.state.pageSize;
-	}
-
-	/**
-	 * Get total number of pages
-	 */
-	getTotalPages(): number {
-		return this.state.totalPages;
-	}
-
-	/**
-	 * Get total number of items
-	 */
-	getTotalItems(): number {
-		return this.state.totalItems;
-	}
-
-	/**
 	 * Set the page size
 	 */
 	setPageSize(size: number): void {
@@ -89,48 +61,6 @@ export class PaginationService {
 	}
 
 	/**
-	 * Go to the first page
-	 */
-	goToFirst(): void {
-		this.goToPage(1);
-	}
-
-	/**
-	 * Go to the last page
-	 */
-	goToLast(): void {
-		this.goToPage(this.state.totalPages);
-	}
-
-	/**
-	 * Go to the previous page
-	 */
-	goToPrevious(): void {
-		this.goToPage(this.state.currentPage - 1);
-	}
-
-	/**
-	 * Go to the next page
-	 */
-	goToNext(): void {
-		this.goToPage(this.state.currentPage + 1);
-	}
-
-	/**
-	 * Check if can go to previous page
-	 */
-	canGoPrevious(): boolean {
-		return this.state.currentPage > 1;
-	}
-
-	/**
-	 * Check if can go to next page
-	 */
-	canGoNext(): boolean {
-		return this.state.currentPage < this.state.totalPages;
-	}
-
-	/**
 	 * Reset to first page (used when filters change)
 	 */
 	resetToFirst(): void {
@@ -147,21 +77,5 @@ export class PaginationService {
 			data.length
 		);
 		return data.slice(start, end);
-	}
-
-	/**
-	 * Get display info for current page
-	 */
-	getDisplayInfo(): { start: number; end: number; total: number } {
-		const { start, end } = getPageIndices(
-			this.state.currentPage,
-			this.state.pageSize,
-			this.state.totalItems
-		);
-		return {
-			start: this.state.totalItems > 0 ? start + 1 : 0,
-			end,
-			total: this.state.totalItems,
-		};
 	}
 }

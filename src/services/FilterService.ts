@@ -1,5 +1,5 @@
 import type { BasesEntry, BasesPropertyId } from 'obsidian';
-import type { FilterState, QuickFilter, FilterPreset } from '../types';
+import type { FilterState, QuickFilter, FilterPreset, ColumnFilter } from '../types';
 import { generateId, containsIgnoreCase, safeJsonParse, valueToString } from '../utils/helpers';
 
 /**
@@ -9,6 +9,7 @@ export class FilterService {
 	private state: FilterState;
 	private presets: FilterPreset[];
 	private visibleProperties: BasesPropertyId[];
+	private columnFilters: Map<BasesPropertyId, string[]>;
 	private onChange: () => void;
 
 	constructor(onChange: () => void) {
@@ -20,6 +21,7 @@ export class FilterService {
 		};
 		this.presets = [];
 		this.visibleProperties = [];
+		this.columnFilters = new Map();
 	}
 
 	/**
@@ -27,13 +29,6 @@ export class FilterService {
 	 */
 	setVisibleProperties(properties: BasesPropertyId[]): void {
 		this.visibleProperties = properties;
-	}
-
-	/**
-	 * Get current filter state
-	 */
-	getState(): FilterState {
-		return { ...this.state };
 	}
 
 	/**
@@ -86,29 +81,51 @@ export class FilterService {
 	}
 
 	/**
-	 * Clear all quick filters
-	 */
-	clearQuickFilters(): void {
-		this.state.quickFilters = [];
-		this.state.activePresetId = null;
-		this.onChange();
-	}
-
-	/**
-	 * Clear all filters (search + quick filters)
+	 * Clear all filters (search + quick filters + column filters)
 	 */
 	clearAllFilters(): void {
 		this.state.searchQuery = '';
 		this.state.quickFilters = [];
 		this.state.activePresetId = null;
+		this.columnFilters.clear();
+		this.onChange();
+	}
+
+	// --- Column Filter Management ---
+
+	/**
+	 * Set column filter values (multi-select)
+	 */
+	setColumnFilter(propertyId: BasesPropertyId, values: string[]): void {
+		if (values.length === 0) {
+			this.columnFilters.delete(propertyId);
+		} else {
+			this.columnFilters.set(propertyId, values);
+		}
+		this.state.activePresetId = null; // Clear preset when manually filtering
 		this.onChange();
 	}
 
 	/**
-	 * Check if any filters are active
+	 * Get column filter values for a property
 	 */
-	hasActiveFilters(): boolean {
-		return this.state.searchQuery.length > 0 || this.state.quickFilters.length > 0;
+	getColumnFilterValues(propertyId: BasesPropertyId): string[] {
+		return this.columnFilters.get(propertyId) || [];
+	}
+
+	/**
+	 * Get all column filters as a Map
+	 */
+	getColumnFilters(): Map<BasesPropertyId, string[]> {
+		return new Map(this.columnFilters);
+	}
+
+	/**
+	 * Clear all column filters
+	 */
+	clearColumnFilters(): void {
+		this.columnFilters.clear();
+		this.onChange();
 	}
 
 	// --- Preset Management ---
@@ -174,16 +191,6 @@ export class FilterService {
 		return preset;
 	}
 
-	/**
-	 * Delete a preset
-	 */
-	deletePreset(presetId: string): void {
-		this.presets = this.presets.filter((p) => p.id !== presetId);
-		if (this.state.activePresetId === presetId) {
-			this.state.activePresetId = null;
-		}
-	}
-
 	// --- Filtering Logic ---
 
 	/**
@@ -202,7 +209,52 @@ export class FilterService {
 			result = this.applyQuickFilter(result, filter);
 		}
 
+		// Apply column filters
+		result = this.applyColumnFilters(result);
+
 		return result;
+	}
+
+	/**
+	 * Apply column filters (multi-select OR logic within column)
+	 */
+	private applyColumnFilters(entries: BasesEntry[]): BasesEntry[] {
+		if (this.columnFilters.size === 0) {
+			return entries;
+		}
+
+		return entries.filter((entry) => {
+			// All column filters must match (AND between columns)
+			for (const [propId, selectedValues] of this.columnFilters) {
+				if (selectedValues.length === 0) continue;
+
+				const value = entry.getValue(propId);
+				const entryValues = this.extractAllValues(value);
+
+				// At least one selected value must match (OR within column)
+				const hasMatch = selectedValues.some((selectedVal) =>
+					entryValues.some((entryVal) => entryVal === selectedVal)
+				);
+
+				if (!hasMatch) {
+					return false;
+				}
+			}
+			return true;
+		});
+	}
+
+	/**
+	 * Extract all values from a cell (handles arrays/lists)
+	 */
+	private extractAllValues(value: unknown): string[] {
+		if (value === null || value === undefined) {
+			return [''];
+		}
+		if (Array.isArray(value)) {
+			return value.map((item) => valueToString(item));
+		}
+		return [valueToString(value)];
 	}
 
 	/**

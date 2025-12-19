@@ -20,7 +20,7 @@ export default class BasesPaginatorPlugin extends Plugin {
 			name: VIEW_NAME,
 			icon: VIEW_ICON,
 			factory: (controller, containerEl) => {
-				return new PaginatedTableView(this.app, controller, containerEl);
+				return new PaginatedTableView(this.app, controller, containerEl, () => this.settings);
 			},
 			options: () => PaginatedTableView.getViewOptions(),
 		});

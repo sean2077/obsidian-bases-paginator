@@ -1,6 +1,6 @@
+import { debounce } from 'obsidian';
 import type { SearchBoxOptions } from '../types';
 import { CSS_CLASSES, SEARCH_DEBOUNCE_MS } from '../utils/constants';
-import { debounce } from '../utils/helpers';
 
 /**
  * Search input component with debounced search

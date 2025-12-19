@@ -1,8 +1,9 @@
+import { setIcon } from 'obsidian';
 import type { QuickFilterChipOptions } from '../types';
-import { CSS_CLASSES } from '../utils/constants';
 
 /**
  * A chip/tag component displaying an active quick filter
+ * Uses Obsidian's native multi-select-pill styles
  */
 export class QuickFilterChip {
 	private containerEl: HTMLElement;
@@ -11,21 +12,24 @@ export class QuickFilterChip {
 	constructor(containerEl: HTMLElement, options: QuickFilterChipOptions) {
 		this.containerEl = containerEl;
 
-		this.chipEl = this.containerEl.createEl('span', {
-			cls: CSS_CLASSES.filterChip,
+		// Use Bases' native multi-select-pill structure
+		this.chipEl = this.containerEl.createEl('div', {
+			cls: 'multi-select-pill',
 		});
 
-		// Label: "Property = Value"
-		const labelEl = this.chipEl.createEl('span', {
-			cls: CSS_CLASSES.filterChipLabel,
+		// Content
+		const content = this.chipEl.createEl('div', {
+			cls: 'multi-select-pill-content',
 		});
-		labelEl.setText(`${options.propertyDisplayName} = ${options.filter.value}`);
+		content.createEl('span', {
+			text: `${options.propertyDisplayName} = ${options.filter.value}`,
+		});
 
-		// Remove button
-		const removeBtn = this.chipEl.createEl('span', {
-			cls: CSS_CLASSES.filterChipRemove,
-			text: '×',
+		// Remove button (using Bases' native structure)
+		const removeBtn = this.chipEl.createEl('div', {
+			cls: 'multi-select-pill-remove-button',
 		});
+		setIcon(removeBtn, 'x');
 		removeBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			options.onRemove();

@@ -1,24 +1,4 @@
 /**
- * Debounce a function call
- */
-export function debounce<T extends (...args: unknown[]) => void>(
-	fn: T,
-	delay: number
-): (...args: Parameters<T>) => void {
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-	return (...args: Parameters<T>) => {
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-		}
-		timeoutId = setTimeout(() => {
-			fn(...args);
-			timeoutId = null;
-		}, delay);
-	};
-}
-
-/**
  * Generate a unique ID
  */
 export function generateId(): string {
@@ -109,28 +89,8 @@ export function valueToString(value: unknown): string {
 }
 
 /**
- * Format a value for display in a table cell
- */
-export function formatCellValue(value: unknown): string {
-	if (value === null || value === undefined) {
-		return '';
-	}
-	if (typeof value === 'boolean') {
-		return value ? '✓' : '✗';
-	}
-	return valueToString(value);
-}
-
-/**
  * Check if a string contains another string (case-insensitive)
  */
 export function containsIgnoreCase(str: string, search: string): boolean {
 	return str.toLowerCase().includes(search.toLowerCase());
-}
-
-/**
- * Escape special characters for use in a regex
- */
-export function escapeRegex(str: string): string {
-	return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
