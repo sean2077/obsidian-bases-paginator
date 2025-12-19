@@ -1,13 +1,14 @@
 import {
 	BasesView,
 	type App,
+	type BasesEntry,
 	type BasesPropertyId,
 	type QueryController,
 	type TFile,
 	type ViewOption,
 } from 'obsidian';
 
-import type { QuickFilter } from '../types';
+import type { QuickFilter, SortDirection, SortState } from '../types';
 import { VIEW_TYPE, CSS_CLASSES, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { PaginationService } from '../services/PaginationService';
 import { FilterService } from '../services/FilterService';
@@ -34,6 +35,11 @@ export class PaginatedTableView extends BasesView {
 
 	private paginationService: PaginationService;
 	private filterService: FilterService;
+
+	private sortState: SortState = {
+		propertyId: null,
+		direction: 'ASC',
+	};
 
 	private initialized = false;
 
@@ -140,6 +146,9 @@ export class PaginatedTableView extends BasesView {
 				onRowClick: (file) => {
 					this.openFile(file);
 				},
+				onSort: (propId, direction) => {
+					this.handleSort(propId, direction);
+				},
 			}
 		);
 
@@ -214,11 +223,14 @@ export class PaginatedTableView extends BasesView {
 		// Apply filters
 		const filteredEntries = this.filterService.filterEntries(allEntries);
 
+		// Apply client-side sorting
+		const sortedEntries = this.sortEntries(filteredEntries);
+
 		// Update pagination with filtered count
-		this.paginationService.setTotalItems(filteredEntries.length);
+		this.paginationService.setTotalItems(sortedEntries.length);
 
 		// Get current page data
-		const pagedEntries = this.paginationService.getPageData(filteredEntries);
+		const pagedEntries = this.paginationService.getPageData(sortedEntries);
 
 		// Render table
 		this.tableRenderer.update(pagedEntries, properties);
@@ -255,6 +267,65 @@ export class PaginatedTableView extends BasesView {
 			operator: 'equals',
 		};
 		this.filterService.addQuickFilter(filter);
+	}
+
+	/**
+	 * Handle column sort (client-side sorting)
+	 */
+	private handleSort(propertyId: BasesPropertyId, direction: SortDirection): void {
+		// Update sort state
+		this.sortState = { propertyId, direction };
+
+		// Reset to first page and re-render
+		this.paginationService.resetToFirst();
+		this.renderData();
+	}
+
+	/**
+	 * Sort entries by the current sort state
+	 */
+	private sortEntries(entries: BasesEntry[]): BasesEntry[] {
+		if (!this.sortState.propertyId) {
+			return entries;
+		}
+
+		const propId = this.sortState.propertyId;
+		const direction = this.sortState.direction;
+
+		return [...entries].sort((a, b) => {
+			const valueA = a.getValue(propId);
+			const valueB = b.getValue(propId);
+
+			const comparison = this.compareValues(valueA, valueB);
+			return direction === 'ASC' ? comparison : -comparison;
+		});
+	}
+
+	/**
+	 * Compare two values for sorting
+	 */
+	private compareValues(a: unknown, b: unknown): number {
+		// Handle null/undefined values
+		if (a == null && b == null) return 0;
+		if (a == null) return -1;
+		if (b == null) return 1;
+
+		// Compare based on type
+		if (typeof a === 'string' && typeof b === 'string') {
+			return a.localeCompare(b);
+		}
+		if (typeof a === 'number' && typeof b === 'number') {
+			return a - b;
+		}
+		if (a instanceof Date && b instanceof Date) {
+			return a.getTime() - b.getTime();
+		}
+		if (typeof a === 'boolean' && typeof b === 'boolean') {
+			return (a ? 1 : 0) - (b ? 1 : 0);
+		}
+
+		// Fallback to string comparison
+		return String(a).localeCompare(String(b));
 	}
 
 	/**

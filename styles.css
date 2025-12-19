@@ -164,6 +164,47 @@
 	white-space: nowrap;
 }
 
+.bp-table-header-sortable {
+	cursor: pointer;
+	user-select: none;
+	transition: background-color 0.1s ease;
+}
+
+.bp-table-header-sortable:hover {
+	background: var(--background-modifier-hover);
+}
+
+.bp-table-header-sorted {
+	background: var(--background-secondary-alt);
+}
+
+.bp-table-header-content {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.bp-sort-indicator {
+	display: inline-flex;
+	align-items: center;
+	opacity: 0.4;
+	transition: opacity 0.1s ease;
+}
+
+.bp-sort-indicator svg {
+	width: 14px;
+	height: 14px;
+}
+
+.bp-table-header-sortable:hover .bp-sort-indicator {
+	opacity: 0.7;
+}
+
+.bp-table-header-sorted .bp-sort-indicator {
+	opacity: 1;
+	color: var(--interactive-accent);
+}
+
 .bp-table-header-sticky {
 	position: sticky;
 	top: 0;

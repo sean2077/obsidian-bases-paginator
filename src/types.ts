@@ -66,6 +66,19 @@ export interface FilterBarOptions {
 }
 
 /**
+ * Sort direction (matches Bases API)
+ */
+export type SortDirection = 'ASC' | 'DESC';
+
+/**
+ * Current sort state
+ */
+export interface SortState {
+	propertyId: BasesPropertyId | null;
+	direction: SortDirection;
+}
+
+/**
  * Table renderer options
  */
 export interface TableRendererOptions {
@@ -73,6 +86,7 @@ export interface TableRendererOptions {
 	stickyHeader: boolean;
 	onCellClick: (propertyId: BasesPropertyId, value: string) => void;
 	onRowClick: (file: TFile) => void;
+	onSort: (propertyId: BasesPropertyId, direction: SortDirection) => void;
 }
 
 /**

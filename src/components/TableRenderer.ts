@@ -1,5 +1,5 @@
-import type { App, BasesEntry, BasesPropertyId, BasesViewConfig, TFile } from 'obsidian';
-import type { TableRendererOptions } from '../types';
+import { setIcon, type App, type BasesEntry, type BasesPropertyId, type BasesViewConfig, type TFile } from 'obsidian';
+import type { SortDirection, SortState, TableRendererOptions } from '../types';
 import { CSS_CLASSES } from '../utils/constants';
 
 /**
@@ -14,6 +14,11 @@ export class TableRenderer {
 	private properties: BasesPropertyId[] = [];
 	private config: BasesViewConfig;
 	private options: TableRendererOptions;
+
+	private sortState: SortState = {
+		propertyId: null,
+		direction: 'ASC',
+	};
 
 	constructor(
 		app: App,
@@ -81,10 +86,54 @@ export class TableRenderer {
 
 		for (const propId of this.properties) {
 			const th = headerRow.createEl('th', {
-				cls: CSS_CLASSES.tableHeader,
+				cls: `${CSS_CLASSES.tableHeader} ${CSS_CLASSES.tableHeaderSortable}`,
 			});
-			th.setText(this.config.getDisplayName(propId));
+
+			// Header content container
+			const headerContent = th.createDiv({ cls: CSS_CLASSES.tableHeaderContent });
+			headerContent.createSpan({ text: this.config.getDisplayName(propId) });
+
+			// Sort indicator
+			const sortIndicator = headerContent.createSpan({ cls: CSS_CLASSES.sortIndicator });
+			if (this.sortState.propertyId === propId) {
+				th.addClass(CSS_CLASSES.tableHeaderSorted);
+				setIcon(sortIndicator, this.sortState.direction === 'ASC' ? 'chevron-up' : 'chevron-down');
+			} else {
+				// Show subtle indicator for sortable columns
+				setIcon(sortIndicator, 'chevrons-up-down');
+			}
+
+			// Click to sort
+			th.addEventListener('click', () => this.handleHeaderClick(propId));
 		}
+	}
+
+	/**
+	 * Handle header click for sorting
+	 */
+	private handleHeaderClick(propId: BasesPropertyId): void {
+		let newDirection: SortDirection = 'ASC';
+
+		// If clicking the same column, toggle direction
+		if (this.sortState.propertyId === propId) {
+			newDirection = this.sortState.direction === 'ASC' ? 'DESC' : 'ASC';
+		}
+
+		// Update local state
+		this.sortState = {
+			propertyId: propId,
+			direction: newDirection,
+		};
+
+		// Notify parent to apply sort
+		this.options.onSort(propId, newDirection);
+	}
+
+	/**
+	 * Update sort state (called when sort changes externally)
+	 */
+	setSortState(propertyId: BasesPropertyId | null, direction: SortDirection): void {
+		this.sortState = { propertyId, direction };
 	}
 
 	/**
@@ -118,9 +167,31 @@ export class TableRenderer {
 				});
 
 				const value = entry.getValue(propId);
-				this.renderCellValue(td, propId, value);
+				this.renderCellValue(td, propId, value, entry.file);
 			}
 		}
+	}
+
+	/**
+	 * Check if a value is empty
+	 */
+	private isEmptyValue(value: unknown): boolean {
+		if (value === null || value === undefined) return true;
+		if (value === '' || value === 'null') return true;
+		if (Array.isArray(value) && value.length === 0) return true;
+		// Check for Bases NullValue objects (toString() returns "null")
+		if (typeof value === 'object' && value !== null) {
+			// Check if it's a Value object with isTruthy method
+			if ('isTruthy' in value && typeof (value as { isTruthy: () => boolean }).isTruthy === 'function') {
+				if (!(value as { isTruthy: () => boolean }).isTruthy()) {
+					return true;
+				}
+			}
+			// Also check string representation
+			const str = String(value);
+			if (str === 'null' || str === '') return true;
+		}
+		return false;
 	}
 
 	/**
@@ -129,11 +200,38 @@ export class TableRenderer {
 	private renderCellValue(
 		td: HTMLElement,
 		propId: BasesPropertyId,
-		value: unknown
+		value: unknown,
+		file?: TFile
 	): void {
-		if (value === null || value === undefined) {
+		// Handle empty values (null, undefined, empty string, literal "null", empty array)
+		if (this.isEmptyValue(value)) {
 			td.addClass(CSS_CLASSES.tableCellEmpty);
 			td.setText('-');
+			return;
+		}
+
+		// Special handling for file.name property - make it a clickable link
+		if (propId === 'file.name' && file) {
+			const link = td.createEl('a', {
+				text: String(value),
+				cls: `internal-link ${CSS_CLASSES.fileNameLink}`,
+				attr: { 'data-href': file.path },
+			});
+			link.addEventListener('click', (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.app.workspace.getLeaf().openFile(file);
+			});
+			// Add hover preview
+			link.addEventListener('mouseover', (e) => {
+				this.app.workspace.trigger('hover-link', {
+					event: e,
+					source: 'bases-paginator',
+					hoverParent: td,
+					targetEl: link,
+					linktext: file.path,
+				});
+			});
 			return;
 		}
 
@@ -148,7 +246,7 @@ export class TableRenderer {
 
 		// Render based on type
 		if (typeof value === 'boolean') {
-			const span = td.createEl('span', {
+			td.createEl('span', {
 				text: value ? '✓' : '✗',
 				cls: value ? CSS_CLASSES.boolTrue : CSS_CLASSES.boolFalse,
 			});
@@ -163,18 +261,28 @@ export class TableRenderer {
 			}
 		} else if (typeof value === 'object' && value !== null && 'path' in value) {
 			// Handle file links
-			const file = value as { path: string; display?: string };
+			const fileLink = value as { path: string; display?: string };
 			const link = td.createEl('a', {
-				text: file.display ?? file.path,
+				text: fileLink.display ?? fileLink.path,
 				cls: 'internal-link',
 			});
 			link.addEventListener('click', (e) => {
 				e.preventDefault();
 				e.stopPropagation();
-				const targetFile = this.app.vault.getAbstractFileByPath(file.path);
+				const targetFile = this.app.vault.getAbstractFileByPath(fileLink.path);
 				if (targetFile && 'path' in targetFile) {
 					this.app.workspace.getLeaf().openFile(targetFile as TFile);
 				}
+			});
+			// Add hover preview for file links
+			link.addEventListener('mouseover', (e) => {
+				this.app.workspace.trigger('hover-link', {
+					event: e,
+					source: 'bases-paginator',
+					hoverParent: td,
+					targetEl: link,
+					linktext: fileLink.path,
+				});
 			});
 		} else {
 			td.setText(String(value));
