@@ -1,7 +1,10 @@
 name: Release
 
 on:
-    push:
+    workflow_run:
+        workflows: ["Node.js build"]
+        types:
+            - completed
         branches:
             - main
             - master
@@ -13,6 +16,8 @@ permissions:
 jobs:
     release:
         runs-on: ubuntu-latest
+        # Only run if the triggering workflow succeeded
+        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
         steps:
             - name: Checkout repository
@@ -28,12 +33,6 @@ jobs:
 
             - name: Install dependencies
               run: npm ci
-
-            - name: Build
-              run: npm run build
-
-            - name: Lint
-              run: npm run lint
 
             - name: Semantic Release
               uses: cycjimmy/semantic-release-action@v6
