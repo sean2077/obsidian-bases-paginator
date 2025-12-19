@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/sean2077/obsidian-bases-paginator/compare/1.2.0...1.2.1) (2025-12-19)
+
+### Fixes
+
+* lint errors and add build/lint steps to release workflow ([9616c8b](https://github.com/sean2077/obsidian-bases-paginator/commit/9616c8b119a98ece40c3ebb1605451df60b6b154))
+
 ## [1.2.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.1.0...1.2.0) (2025-12-19)
 
 ### Features
