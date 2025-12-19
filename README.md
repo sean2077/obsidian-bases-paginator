@@ -4,6 +4,8 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
 
 > **Note:** Requires Obsidian v1.10.0+ with the Bases core plugin enabled.
 
+![](./assets/paginated-table.png)
+
 ## Features
 
 ### Pagination
