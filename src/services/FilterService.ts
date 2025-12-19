@@ -1,6 +1,6 @@
 import type { BasesEntry, BasesPropertyId } from 'obsidian';
 import type { FilterState, QuickFilter, FilterPreset } from '../types';
-import { generateId, containsIgnoreCase, safeJsonParse } from '../utils/helpers';
+import { generateId, containsIgnoreCase, safeJsonParse, valueToString } from '../utils/helpers';
 
 /**
  * Service for managing filter state and applying filters to data
@@ -254,8 +254,8 @@ export class FilterService {
 			return '';
 		}
 		if (Array.isArray(value)) {
-			return value.map(String).join(' ');
+			return value.map((item) => valueToString(item)).join(' ');
 		}
-		return String(value);
+		return valueToString(value);
 	}
 }

@@ -108,4 +108,14 @@ export const CSS_CLASSES = {
 	presetItem: `${CSS_PREFIX}-preset-item`,
 	presetItemActive: `${CSS_PREFIX}-preset-item-active`,
 	savePresetBtn: `${CSS_PREFIX}-save-preset-btn`,
+	presetNameInput: `${CSS_PREFIX}-preset-name-input`,
+
+	// Layout
+	layoutOrder1: `${CSS_PREFIX}-order-1`,
+	layoutOrder2: `${CSS_PREFIX}-order-2`,
+	layoutOrder3: `${CSS_PREFIX}-order-3`,
+
+	// Utility
+	hidden: `${CSS_PREFIX}-hidden`,
+	customPageSizeInput: `${CSS_PREFIX}-custom-page-size-input`,
 } as const;

@@ -1,5 +1,5 @@
 import { setIcon } from 'obsidian';
-import type { PaginationBarOptions, PageSizeOption } from '../types';
+import type { PaginationBarOptions } from '../types';
 import { CSS_CLASSES, PAGE_SIZE_OPTIONS } from '../utils/constants';
 
 /**
@@ -141,10 +141,9 @@ export class PaginationBar {
 		this.customPageSizeInput = container.createEl('input', {
 			type: 'number',
 			placeholder: 'Enter number',
+			cls: CSS_CLASSES.customPageSizeInput,
 			attr: { min: '1', max: '1000' },
 		});
-		this.customPageSizeInput.style.width = '80px';
-		this.customPageSizeInput.style.marginLeft = '8px';
 
 		this.customPageSizeInput.addEventListener('change', () => {
 			const size = parseInt(this.customPageSizeInput!.value, 10);

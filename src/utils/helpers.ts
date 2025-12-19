@@ -65,6 +65,50 @@ export function safeJsonParse<T>(json: string, fallback: T): T {
 }
 
 /**
+ * Safely convert a value to string, handling objects properly
+ */
+export function valueToString(value: unknown): string {
+	if (value === null || value === undefined) {
+		return '';
+	}
+	if (typeof value === 'string') {
+		return value;
+	}
+	if (typeof value === 'number' || typeof value === 'boolean') {
+		return String(value);
+	}
+	if (value instanceof Date) {
+		return value.toLocaleDateString();
+	}
+	if (Array.isArray(value)) {
+		return value.map((item) => valueToString(item)).join(', ');
+	}
+	// Check for objects with toString method that returns meaningful value
+	if (typeof value === 'object' && value !== null) {
+		// Check if it's a file link object
+		if ('path' in value) {
+			const fileObj = value as { path: string; display?: string };
+			return fileObj.display ?? fileObj.path;
+		}
+		// Check for custom toString (not the default Object.prototype.toString)
+		const valueObj = value as { toString?: () => string };
+		if (typeof valueObj.toString === 'function' && valueObj.toString !== Object.prototype.toString) {
+			const str = valueObj.toString();
+			if (str !== '[object Object]') {
+				return str;
+			}
+		}
+		// Try JSON for other objects
+		try {
+			return JSON.stringify(value);
+		} catch {
+			return '';
+		}
+	}
+	return '';
+}
+
+/**
  * Format a value for display in a table cell
  */
 export function formatCellValue(value: unknown): string {
@@ -74,13 +118,7 @@ export function formatCellValue(value: unknown): string {
 	if (typeof value === 'boolean') {
 		return value ? '✓' : '✗';
 	}
-	if (value instanceof Date) {
-		return value.toLocaleDateString();
-	}
-	if (Array.isArray(value)) {
-		return value.map(String).join(', ');
-	}
-	return String(value);
+	return valueToString(value);
 }
 
 /**

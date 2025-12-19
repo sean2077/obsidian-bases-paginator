@@ -9,6 +9,7 @@ import {
 } from 'obsidian';
 
 import type { QuickFilter, SortDirection, SortState } from '../types';
+import { valueToString } from '../utils/helpers';
 import { VIEW_TYPE, CSS_CLASSES, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { PaginationService } from '../services/PaginationService';
 import { FilterService } from '../services/FilterService';
@@ -74,18 +75,23 @@ export class PaginatedTableView extends BasesView {
 	private updateLayout(): void {
 		const position = this.getConfigValue('paginationPosition', VIEW_OPTION_DEFAULTS.paginationPosition);
 
-		// Use CSS order to control layout
+		// Use CSS classes for order to control layout
 		// Filter bar always first
-		this.filterBarEl.style.order = '1';
+		this.filterBarEl.removeClass(CSS_CLASSES.layoutOrder2, CSS_CLASSES.layoutOrder3);
+		this.filterBarEl.addClass(CSS_CLASSES.layoutOrder1);
 
 		if (position === 'top') {
 			// Pagination -> Table
-			this.paginationBarEl.style.order = '2';
-			this.tableContainerEl.style.order = '3';
+			this.paginationBarEl.removeClass(CSS_CLASSES.layoutOrder1, CSS_CLASSES.layoutOrder3);
+			this.paginationBarEl.addClass(CSS_CLASSES.layoutOrder2);
+			this.tableContainerEl.removeClass(CSS_CLASSES.layoutOrder1, CSS_CLASSES.layoutOrder2);
+			this.tableContainerEl.addClass(CSS_CLASSES.layoutOrder3);
 		} else {
 			// Table -> Pagination
-			this.tableContainerEl.style.order = '2';
-			this.paginationBarEl.style.order = '3';
+			this.tableContainerEl.removeClass(CSS_CLASSES.layoutOrder1, CSS_CLASSES.layoutOrder3);
+			this.tableContainerEl.addClass(CSS_CLASSES.layoutOrder2);
+			this.paginationBarEl.removeClass(CSS_CLASSES.layoutOrder1, CSS_CLASSES.layoutOrder2);
+			this.paginationBarEl.addClass(CSS_CLASSES.layoutOrder3);
 		}
 	}
 
@@ -324,15 +330,15 @@ export class PaginatedTableView extends BasesView {
 			return (a ? 1 : 0) - (b ? 1 : 0);
 		}
 
-		// Fallback to string comparison
-		return String(a).localeCompare(String(b));
+		// Fallback to string comparison using safe conversion
+		return valueToString(a).localeCompare(valueToString(b));
 	}
 
 	/**
 	 * Open a file in a new leaf
 	 */
 	private openFile(file: TFile): void {
-		this._app.workspace.getLeaf().openFile(file);
+		void this._app.workspace.getLeaf().openFile(file);
 	}
 
 	/**
@@ -356,7 +362,9 @@ export class PaginatedTableView extends BasesView {
 	private getConfigValue(key: string, defaultValue: string): string {
 		if (!this.config) return defaultValue;
 		const value = this.config.get(key);
-		return value !== undefined ? String(value) : defaultValue;
+		if (value === undefined) return defaultValue;
+		if (typeof value === 'string') return value;
+		return valueToString(value) || defaultValue;
 	}
 
 	/**
@@ -376,7 +384,9 @@ export class PaginatedTableView extends BasesView {
 		if (!this.config) return defaultValue;
 		const value = this.config.get(key);
 		if (value === undefined) return defaultValue;
-		const num = parseInt(String(value), 10);
+		if (typeof value === 'number') return value;
+		const strValue = typeof value === 'string' ? value : valueToString(value);
+		const num = parseInt(strValue, 10);
 		return isNaN(num) ? defaultValue : num;
 	}
 

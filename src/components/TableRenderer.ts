@@ -1,6 +1,7 @@
-import { setIcon, type App, type BasesEntry, type BasesPropertyId, type BasesViewConfig, type TFile } from 'obsidian';
+import { setIcon, TFile, type App, type BasesEntry, type BasesPropertyId, type BasesViewConfig } from 'obsidian';
 import type { SortDirection, SortState, TableRendererOptions } from '../types';
 import { CSS_CLASSES } from '../utils/constants';
+import { valueToString as safeValueToString } from '../utils/helpers';
 
 /**
  * Table rendering component
@@ -188,7 +189,7 @@ export class TableRenderer {
 				}
 			}
 			// Also check string representation
-			const str = String(value);
+			const str = safeValueToString(value);
 			if (str === 'null' || str === '') return true;
 		}
 		return false;
@@ -213,14 +214,14 @@ export class TableRenderer {
 		// Special handling for file.name property - make it a clickable link
 		if (propId === 'file.name' && file) {
 			const link = td.createEl('a', {
-				text: String(value),
+				text: safeValueToString(value),
 				cls: `internal-link ${CSS_CLASSES.fileNameLink}`,
 				attr: { 'data-href': file.path },
 			});
 			link.addEventListener('click', (e) => {
 				e.preventDefault();
 				e.stopPropagation();
-				this.app.workspace.getLeaf().openFile(file);
+				void this.app.workspace.getLeaf().openFile(file);
 			});
 			// Add hover preview
 			link.addEventListener('mouseover', (e) => {
@@ -270,8 +271,8 @@ export class TableRenderer {
 				e.preventDefault();
 				e.stopPropagation();
 				const targetFile = this.app.vault.getAbstractFileByPath(fileLink.path);
-				if (targetFile && 'path' in targetFile) {
-					this.app.workspace.getLeaf().openFile(targetFile as TFile);
+				if (targetFile instanceof TFile) {
+					void this.app.workspace.getLeaf().openFile(targetFile);
 				}
 			});
 			// Add hover preview for file links
@@ -327,7 +328,7 @@ export class TableRenderer {
 				// Try to find and open the file
 				const file = this.app.metadataCache.getFirstLinkpathDest(linkPath, '');
 				if (file) {
-					this.app.workspace.getLeaf().openFile(file);
+					void this.app.workspace.getLeaf().openFile(file);
 				}
 			});
 
@@ -355,16 +356,7 @@ export class TableRenderer {
 	 * Convert value to string for filtering
 	 */
 	private valueToString(value: unknown): string {
-		if (value === null || value === undefined) {
-			return '';
-		}
-		if (Array.isArray(value)) {
-			return value.map(String).join(', ');
-		}
-		if (typeof value === 'object' && value !== null && 'path' in value) {
-			return (value as { path: string }).path;
-		}
-		return String(value);
+		return safeValueToString(value);
 	}
 
 	/**

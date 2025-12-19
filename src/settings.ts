@@ -21,7 +21,9 @@ export class BasesPaginatorSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Bases Paginator Settings' });
+		new Setting(containerEl)
+			.setName('Pagination defaults')
+			.setHeading();
 
 		// Default page size
 		new Setting(containerEl)

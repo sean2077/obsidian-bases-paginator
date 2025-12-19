@@ -13,6 +13,7 @@ export class FilterBar {
 	private searchSection: HTMLElement;
 	private activeFiltersEl: HTMLElement;
 	private presetSection: HTMLElement;
+	private savePresetInput: HTMLInputElement | null = null;
 
 	private searchBox: SearchBox;
 	private presetSelector: PresetSelector;
@@ -111,19 +112,56 @@ export class FilterBar {
 	}
 
 	/**
-	 * Prompt user to save current filters as preset
+	 * Prompt user to save current filters as preset using inline input
 	 */
 	private promptSavePreset(): void {
-		const name = prompt('Enter preset name:');
-		if (name && name.trim()) {
-			this.options.onPresetSave(name.trim());
+		// Remove existing input if any
+		if (this.savePresetInput) {
+			this.savePresetInput.remove();
+			this.savePresetInput = null;
 		}
+
+		// Create inline input
+		this.savePresetInput = this.presetSection.createEl('input', {
+			type: 'text',
+			placeholder: 'Preset name...',
+			cls: CSS_CLASSES.presetNameInput,
+		});
+
+		this.savePresetInput.focus();
+
+		const handleSave = (): void => {
+			const name = this.savePresetInput?.value.trim();
+			if (name) {
+				this.options.onPresetSave(name);
+			}
+			this.savePresetInput?.remove();
+			this.savePresetInput = null;
+		};
+
+		this.savePresetInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				handleSave();
+			} else if (e.key === 'Escape') {
+				this.savePresetInput?.remove();
+				this.savePresetInput = null;
+			}
+		});
+
+		this.savePresetInput.addEventListener('blur', () => {
+			// Small delay to allow click events to fire first
+			setTimeout(() => {
+				if (this.savePresetInput) {
+					handleSave();
+				}
+			}, 100);
+		});
 	}
 
 	/**
 	 * Show/hide the filter bar
 	 */
 	setVisible(visible: boolean): void {
-		this.containerEl.style.display = visible ? 'flex' : 'none';
+		this.containerEl.toggleClass(CSS_CLASSES.hidden, !visible);
 	}
 }

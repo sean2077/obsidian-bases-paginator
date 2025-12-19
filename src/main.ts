@@ -7,12 +7,12 @@ import { BasesPaginatorSettingTab } from './settings';
 /**
  * Bases Paginator Plugin
  *
- * Adds a paginated table view with quick filtering to Obsidian Bases.
+ * Adds a paginated table view with quick filtering to Bases.
  */
 export default class BasesPaginatorPlugin extends Plugin {
-	settings: BasesPaginatorSettings;
+	settings: BasesPaginatorSettings = DEFAULT_SETTINGS;
 
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
 
 		// Register the paginated table view for Bases
@@ -22,7 +22,7 @@ export default class BasesPaginatorPlugin extends Plugin {
 			factory: (controller, containerEl) => {
 				return new PaginatedTableView(this.app, controller, containerEl);
 			},
-			options: PaginatedTableView.getViewOptions,
+			options: () => PaginatedTableView.getViewOptions(),
 		});
 
 		if (!registered) {
@@ -34,18 +34,19 @@ export default class BasesPaginatorPlugin extends Plugin {
 		// Add settings tab
 		this.addSettingTab(new BasesPaginatorSettingTab(this.app, this));
 
-		console.log('Bases Paginator plugin loaded');
+		console.debug('Bases Paginator plugin loaded');
 	}
 
-	onunload() {
-		console.log('Bases Paginator plugin unloaded');
+	onunload(): void {
+		console.debug('Bases Paginator plugin unloaded');
 	}
 
-	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+	async loadSettings(): Promise<void> {
+		const data = await this.loadData() as Partial<BasesPaginatorSettings> | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data ?? {});
 	}
 
-	async saveSettings() {
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
 }
