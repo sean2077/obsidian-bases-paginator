@@ -86,6 +86,7 @@ export const CSS_CLASSES = {
 	tableCellFilterable: `${CSS_PREFIX}-table-cell-filterable`,
 	tableCellEmpty: `${CSS_PREFIX}-table-cell-empty`,
 	fileNameLink: `${CSS_PREFIX}-file-name-link`,
+	listCell: `${CSS_PREFIX}-list-cell`,
 	tag: `${CSS_PREFIX}-tag`,
 	boolTrue: `${CSS_PREFIX}-bool-true`,
 	boolFalse: `${CSS_PREFIX}-bool-false`,

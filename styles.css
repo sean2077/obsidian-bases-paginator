@@ -250,6 +250,20 @@
 }
 
 /* ========== Cell Value Types ========== */
+.bp-list-cell {
+	list-style: disc;
+	margin: 0;
+	padding-left: 1.2em;
+}
+
+.bp-list-cell li {
+	padding: 1px 0;
+}
+
+.bp-list-cell li::marker {
+	color: var(--text-accent);
+}
+
 .bp-tag {
 	display: inline-block;
 	padding: 2px 6px;

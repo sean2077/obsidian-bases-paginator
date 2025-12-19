@@ -253,12 +253,18 @@ export class TableRenderer {
 			});
 		} else if (value instanceof Date) {
 			td.setText(value.toLocaleDateString());
-		} else if (Array.isArray(value)) {
-			for (const item of value) {
-				td.createEl('span', {
-					text: String(item),
-					cls: CSS_CLASSES.tag,
-				});
+		} else if (this.isListValue(value)) {
+			const items = this.extractListItems(value);
+			const list = td.createEl('ul', { cls: CSS_CLASSES.listCell });
+			for (const item of items) {
+				const li = list.createEl('li');
+				const itemStr = String(item);
+				// Check if item contains wikilinks
+				if (itemStr.includes('[[')) {
+					this.renderTextWithLinks(li, itemStr);
+				} else {
+					li.setText(itemStr);
+				}
 			}
 		} else if (typeof value === 'object' && value !== null && 'path' in value) {
 			// Handle file links
@@ -350,6 +356,54 @@ export class TableRenderer {
 		if (lastIndex < text.length) {
 			container.appendText(text.slice(lastIndex));
 		}
+	}
+
+	/**
+	 * Check if a value is a list (array or array-like object from Bases API)
+	 */
+	private isListValue(value: unknown): boolean {
+		if (Array.isArray(value)) return true;
+
+		if (typeof value !== 'object' || value === null) return false;
+
+		// Check for Bases ListValue - has 'data' property that is an array (icon: "lucide-list")
+		if ('data' in value && Array.isArray((value as { data: unknown }).data)) {
+			return true;
+		}
+
+		// Check for Bases ListValue - has 'values' property that is an array
+		if ('values' in value && Array.isArray((value as { values: unknown }).values)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Extract items from a list value
+	 */
+	private extractListItems(value: unknown): unknown[] {
+		if (Array.isArray(value)) return value;
+
+		if (typeof value !== 'object' || value === null) return [];
+
+		// Handle Bases ListValue with 'data' property
+		if ('data' in value) {
+			const listValue = value as { data: unknown };
+			if (Array.isArray(listValue.data)) {
+				return listValue.data;
+			}
+		}
+
+		// Handle Bases ListValue with 'values' property
+		if ('values' in value) {
+			const listValue = value as { values: unknown };
+			if (Array.isArray(listValue.values)) {
+				return listValue.values;
+			}
+		}
+
+		return [];
 	}
 
 	/**
