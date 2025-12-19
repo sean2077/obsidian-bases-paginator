@@ -285,7 +285,69 @@ export class TableRenderer {
 				});
 			});
 		} else {
-			td.setText(String(value));
+			// Check if it's a string with wikilinks
+			const strValue = String(value);
+			if (strValue.includes('[[')) {
+				this.renderTextWithLinks(td, strValue);
+			} else {
+				td.setText(strValue);
+			}
+		}
+	}
+
+	/**
+	 * Render text that may contain wikilinks [[link]] or [[link|display]]
+	 */
+	private renderTextWithLinks(container: HTMLElement, text: string): void {
+		// Regex to match wikilinks: [[path]] or [[path|display]]
+		const wikiLinkRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
+		let lastIndex = 0;
+		let match;
+
+		while ((match = wikiLinkRegex.exec(text)) !== null) {
+			// Add text before the link
+			if (match.index > lastIndex) {
+				container.appendText(text.slice(lastIndex, match.index));
+			}
+
+			const linkPath = match[1]?.trim() ?? '';
+			const displayText = match[2]?.trim() ?? linkPath;
+
+			// Create the link
+			const link = container.createEl('a', {
+				text: displayText,
+				cls: 'internal-link',
+				attr: { 'data-href': linkPath },
+			});
+
+			link.addEventListener('click', (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				// Try to find and open the file
+				const file = this.app.metadataCache.getFirstLinkpathDest(linkPath, '');
+				if (file) {
+					this.app.workspace.getLeaf().openFile(file);
+				}
+			});
+
+			// Add hover preview
+			link.addEventListener('mouseover', (e) => {
+				this.app.workspace.trigger('hover-link', {
+					event: e,
+					source: 'bases-paginator',
+					hoverParent: container,
+					targetEl: link,
+					linktext: linkPath,
+				});
+			});
+
+			lastIndex = match.index + match[0].length;
+		}
+
+		// Add remaining text after the last link
+		if (lastIndex < text.length) {
+			container.appendText(text.slice(lastIndex));
 		}
 	}
 
