@@ -87,6 +87,7 @@ export const CSS_CLASSES = {
 
 	// Pagination bar
 	paginationBar: `${CSS_PREFIX}-pagination-bar`,
+	navContainer: `${CSS_PREFIX}-nav-container`,
 	paginationBtn: `${CSS_PREFIX}-pagination-btn`,
 	paginationBtnDisabled: `${CSS_PREFIX}-pagination-btn-disabled`,
 	pageInfo: `${CSS_PREFIX}-page-info`,

@@ -28,12 +28,14 @@ export class PaginatedTableView extends BasesView {
 	private tableContainerEl!: HTMLElement;
 	private paginationBarEl!: HTMLElement;
 
-	private filterBar!: FilterBar;
-	private tableRenderer!: TableRenderer;
-	private paginationBar!: PaginationBar;
+	private filterBar: FilterBar | null = null;
+	private tableRenderer: TableRenderer | null = null;
+	private paginationBar: PaginationBar | null = null;
 
 	private paginationService: PaginationService;
 	private filterService: FilterService;
+
+	private initialized = false;
 
 	constructor(app: App, controller: QueryController, containerEl: HTMLElement) {
 		super(controller);
@@ -44,33 +46,53 @@ export class PaginatedTableView extends BasesView {
 		this.paginationService = new PaginationService(() => this.onStateChange());
 		this.filterService = new FilterService(() => this.onFilterChange());
 
-		// Build UI structure
+		// Build UI structure (containers only, components initialized later)
 		this.buildUI();
 	}
 
 	/**
-	 * Build the UI structure
+	 * Build the UI structure (containers only)
 	 */
 	private buildUI(): void {
 		this._containerEl.addClass(CSS_CLASSES.container);
 
-		// Filter bar container
+		// Create all containers - order will be set in initializeComponents
 		this.filterBarEl = this._containerEl.createDiv();
-
-		// Table container
-		this.tableContainerEl = this._containerEl.createDiv();
-
-		// Pagination bar container
 		this.paginationBarEl = this._containerEl.createDiv();
-
-		// Initialize components (will be configured in onDataUpdated)
-		this.initializeComponents();
+		this.tableContainerEl = this._containerEl.createDiv();
 	}
 
 	/**
-	 * Initialize UI components
+	 * Update layout based on pagination position setting
+	 */
+	private updateLayout(): void {
+		const position = this.getConfigValue('paginationPosition', VIEW_OPTION_DEFAULTS.paginationPosition);
+
+		// Use CSS order to control layout
+		// Filter bar always first
+		this.filterBarEl.style.order = '1';
+
+		if (position === 'top') {
+			// Pagination -> Table
+			this.paginationBarEl.style.order = '2';
+			this.tableContainerEl.style.order = '3';
+		} else {
+			// Table -> Pagination
+			this.tableContainerEl.style.order = '2';
+			this.paginationBarEl.style.order = '3';
+		}
+	}
+
+	/**
+	 * Initialize UI components (called on first onDataUpdated when config is available)
 	 */
 	private initializeComponents(): void {
+		if (this.initialized) return;
+		this.initialized = true;
+
+		// Set layout based on config
+		this.updateLayout();
+
 		const presetsJson = this.getConfigValue('filterPresets', VIEW_OPTION_DEFAULTS.filterPresets);
 		this.filterService.loadPresets(presetsJson);
 
@@ -94,7 +116,7 @@ export class PaginatedTableView extends BasesView {
 				onPresetSave: (name) => {
 					const preset = this.filterService.saveCurrentAsPreset(name);
 					this.savePresets();
-					this.filterBar.updatePresets(
+					this.filterBar?.updatePresets(
 						this.filterService.getPresets(),
 						preset.id
 					);
@@ -141,6 +163,14 @@ export class PaginatedTableView extends BasesView {
 	 * Called when data is updated from Bases
 	 */
 	onDataUpdated(): void {
+		// Initialize components on first call (when config is available)
+		if (!this.initialized) {
+			this.initializeComponents();
+		}
+
+		// Update layout (in case config changed)
+		this.updateLayout();
+
 		// Update visible properties for search filtering
 		const properties = this.getVisibleProperties();
 		this.filterService.setVisibleProperties(properties);
@@ -150,7 +180,7 @@ export class PaginatedTableView extends BasesView {
 
 		// Update filter bar visibility
 		const showFilterBar = this.getConfigBool('showFilterBar', VIEW_OPTION_DEFAULTS.showFilterBar);
-		this.filterBar.setVisible(showFilterBar);
+		this.filterBar?.setVisible(showFilterBar);
 	}
 
 	/**
@@ -173,6 +203,10 @@ export class PaginatedTableView extends BasesView {
 	 * Render data with current filters and pagination
 	 */
 	private renderData(): void {
+		if (!this.filterBar || !this.tableRenderer || !this.paginationBar) {
+			return;
+		}
+
 		// Get data from Bases
 		const allEntries = this.data.data;
 		const properties = this.getVisibleProperties();
@@ -249,6 +283,7 @@ export class PaginatedTableView extends BasesView {
 	 * Get config value as string
 	 */
 	private getConfigValue(key: string, defaultValue: string): string {
+		if (!this.config) return defaultValue;
 		const value = this.config.get(key);
 		return value !== undefined ? String(value) : defaultValue;
 	}
@@ -257,6 +292,7 @@ export class PaginatedTableView extends BasesView {
 	 * Get config value as boolean
 	 */
 	private getConfigBool(key: string, defaultValue: boolean): boolean {
+		if (!this.config) return defaultValue;
 		const value = this.config.get(key);
 		if (value === undefined) return defaultValue;
 		return value === true || value === 'true';
@@ -266,6 +302,7 @@ export class PaginatedTableView extends BasesView {
 	 * Get config value as number
 	 */
 	private getConfigNumber(key: string, defaultValue: number): number {
+		if (!this.config) return defaultValue;
 		const value = this.config.get(key);
 		if (value === undefined) return defaultValue;
 		const num = parseInt(String(value), 10);

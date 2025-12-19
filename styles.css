@@ -230,12 +230,24 @@
 .bp-pagination-bar {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
+	justify-content: center;
+	gap: 16px;
 	padding: 10px 12px;
-	border-top: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid var(--background-modifier-border);
 	background: var(--background-primary);
 	flex-wrap: wrap;
+}
+
+.bp-nav-container {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+/* When pagination is at bottom (order: 3 means after table which is order: 2) */
+.bp-pagination-bar[style*="order: 3"] {
+	border-bottom: none;
+	border-top: 1px solid var(--background-modifier-border);
 }
 
 .bp-page-size-selector {

@@ -32,6 +32,8 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
 
 ## Usage
 
+### In `.base` Files
+
 1. Open any `.base` file in Obsidian
 2. Click the view switcher in the toolbar
 3. Select **"Paginated Table"** from the view options
@@ -41,6 +43,46 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
    - Enable/disable click-to-filter
    - Show/hide filter bar
    - Sticky header
+
+### In Markdown (Base Code Block)
+
+You can embed a paginated table directly in any Markdown note using a base code block:
+
+````markdown
+```base
+filters:
+  and:
+    - file.hasTag("task")
+views:
+  - type: paginated-table
+    name: "My Tasks"
+    pageSize: "25"
+    showSearchBox: true
+    enableQuickFilters: true
+    showFilterBar: true
+    stickyHeader: true
+```
+````
+
+### View Options Reference
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pageSize` | string | `"25"` | Items per page (`"10"`, `"25"`, `"50"`, `"100"`) |
+| `showSearchBox` | boolean | `true` | Show global search input |
+| `enableQuickFilters` | boolean | `true` | Enable click-to-filter on cells |
+| `showFilterBar` | boolean | `true` | Show filter bar with search and presets |
+| `stickyHeader` | boolean | `true` | Keep table header visible when scrolling |
+
+### Embedding Base Views
+
+You can also embed a specific view from a `.base` file into another note:
+
+```markdown
+![[MyDatabase.base#My Tasks]]
+```
+
+This will render the "My Tasks" view (if it's a paginated-table type) inline in your note
 
 ## Installation
 

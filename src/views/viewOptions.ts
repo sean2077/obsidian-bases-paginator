@@ -46,6 +46,17 @@ export function getViewOptions(): ViewOption[] {
 			key: 'stickyHeader',
 			displayName: 'Sticky header',
 		} as ViewOption,
+
+		// Pagination position
+		{
+			type: 'dropdown',
+			key: 'paginationPosition',
+			displayName: 'Pagination position',
+			options: {
+				'top': 'Top',
+				'bottom': 'Bottom',
+			},
+		} as ViewOption,
 	];
 }
 
@@ -59,4 +70,5 @@ export const VIEW_OPTION_DEFAULTS = {
 	showFilterBar: true,
 	stickyHeader: true,
 	filterPresets: '[]',
+	paginationPosition: 'top',
 };

@@ -9,9 +9,11 @@ export class PaginationBar {
 	private containerEl: HTMLElement;
 
 	private firstBtn: HTMLButtonElement;
+	private prev10Btn: HTMLButtonElement;
 	private prevBtn: HTMLButtonElement;
 	private pageInfo: HTMLSpanElement;
 	private nextBtn: HTMLButtonElement;
+	private next10Btn: HTMLButtonElement;
 	private lastBtn: HTMLButtonElement;
 	private itemInfo: HTMLSpanElement;
 	private pageSizeSelect: HTMLSelectElement;
@@ -49,7 +51,7 @@ export class PaginationBar {
 		});
 
 		// Navigation buttons
-		const navContainer = this.containerEl.createDiv();
+		const navContainer = this.containerEl.createDiv({ cls: CSS_CLASSES.navContainer });
 
 		// First page button
 		this.firstBtn = navContainer.createEl('button', {
@@ -58,6 +60,14 @@ export class PaginationBar {
 		});
 		setIcon(this.firstBtn, 'chevrons-left');
 		this.firstBtn.addEventListener('click', () => this.goToPage(1));
+
+		// Previous 10 pages button
+		this.prev10Btn = navContainer.createEl('button', {
+			cls: CSS_CLASSES.paginationBtn,
+			attr: { title: 'Previous 10 pages' },
+		});
+		this.prev10Btn.setText('-10');
+		this.prev10Btn.addEventListener('click', () => this.goToPage(this.currentPage - 10));
 
 		// Previous page button
 		this.prevBtn = navContainer.createEl('button', {
@@ -79,6 +89,14 @@ export class PaginationBar {
 		});
 		setIcon(this.nextBtn, 'chevron-right');
 		this.nextBtn.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+
+		// Next 10 pages button
+		this.next10Btn = navContainer.createEl('button', {
+			cls: CSS_CLASSES.paginationBtn,
+			attr: { title: 'Next 10 pages' },
+		});
+		this.next10Btn.setText('+10');
+		this.next10Btn.addEventListener('click', () => this.goToPage(this.currentPage + 10));
 
 		// Last page button
 		this.lastBtn = navContainer.createEl('button', {
@@ -158,11 +176,13 @@ export class PaginationBar {
 	}
 
 	/**
-	 * Go to a specific page
+	 * Go to a specific page (clamped to valid range)
 	 */
 	private goToPage(page: number): void {
-		if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
-			this.onPageChange(page);
+		// Clamp to valid range
+		const targetPage = Math.max(1, Math.min(page, this.totalPages));
+		if (targetPage !== this.currentPage) {
+			this.onPageChange(targetPage);
 		}
 	}
 
@@ -180,17 +200,23 @@ export class PaginationBar {
 
 		// Update button states
 		const canGoPrev = this.currentPage > 1;
+		const canGoPrev10 = this.currentPage > 10;
 		const canGoNext = this.currentPage < this.totalPages;
+		const canGoNext10 = this.currentPage + 10 <= this.totalPages;
 
 		this.firstBtn.disabled = !canGoPrev;
+		this.prev10Btn.disabled = !canGoPrev10;
 		this.prevBtn.disabled = !canGoPrev;
 		this.nextBtn.disabled = !canGoNext;
+		this.next10Btn.disabled = !canGoNext10;
 		this.lastBtn.disabled = !canGoNext;
 
 		// Update disabled class
 		this.firstBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoPrev);
+		this.prev10Btn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoPrev10);
 		this.prevBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoPrev);
 		this.nextBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoNext);
+		this.next10Btn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoNext10);
 		this.lastBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoNext);
 	}
 
