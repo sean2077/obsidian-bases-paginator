@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-bases-paginator",
-	"version": "1.0.0",
+	"version": "1.1.0",
 	"description": "Adds a paginated table view with quick filtering to Obsidian Bases",
 	"main": "main.js",
 	"type": "module",

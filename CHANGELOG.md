@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.0.0...1.1.0) (2025-12-19)
+
+### Features
+
+* render list value in better way ([2401df3](https://github.com/sean2077/obsidian-bases-paginator/commit/2401df3f50c85455947ea740cecab83a8c0cdb21))
+
 ## 1.0.0 (2025-12-19)
 
 ### Features
