@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.1.0...1.2.0) (2025-12-19)
+
+### Features
+
+* replace cell click-to-filter with column header filter dropdowns ([89f8e96](https://github.com/sean2077/obsidian-bases-paginator/commit/89f8e960ae274d66627beb114a7cc4d71b208ed5))
+
 ## [1.1.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.0.0...1.1.0) (2025-12-19)
 
 ### Features
