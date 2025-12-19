@@ -287,7 +287,7 @@ export class PaginatedTableView extends BasesView {
 
 		// Handle both string[] (multitext) and string (legacy) formats
 		if (Array.isArray(value)) {
-			return value.filter((s) => s && s.length > 0) as BasesPropertyId[];
+			return value.filter((s): s is string => typeof s === 'string' && s.length > 0) as BasesPropertyId[];
 		}
 		if (typeof value === 'string' && value !== '') {
 			return value.split(',').map((s) => s.trim()).filter((s) => s.length > 0) as BasesPropertyId[];

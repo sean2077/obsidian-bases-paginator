@@ -1,5 +1,5 @@
 import type { BasesEntry, BasesPropertyId } from 'obsidian';
-import type { FilterState, QuickFilter, FilterPreset, ColumnFilter } from '../types';
+import type { FilterState, QuickFilter, FilterPreset } from '../types';
 import { generateId, containsIgnoreCase, safeJsonParse, valueToString } from '../utils/helpers';
 
 /**
