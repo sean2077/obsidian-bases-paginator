@@ -94,6 +94,12 @@ This will render the "My Tasks" view (if it's a paginated-table type) inline in 
 3. Search for "Bases Paginator"
 4. Click Install, then Enable
 
+### Using BRAT
+1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Community Plugins
+2. Open BRAT settings and click "Add Beta plugin"
+3. Enter repository URL: `https://github.com/sean2077/obsidian-bases-paginator`
+4. Click "Add Plugin" and enable it in Community Plugins
+
 ### Manual Installation
 1. Download `main.js`, `styles.css`, and `manifest.json` from the latest release
 2. Create folder: `VaultFolder/.obsidian/plugins/bases-paginator/`
