@@ -124,14 +124,38 @@ export class PaginatedTableView extends BasesView {
 					this.filterService.clearAllFilters();
 				},
 				onPresetSelect: (presetId) => {
-					this.filterService.activatePreset(presetId);
+					const pagination = this.filterService.activatePreset(presetId);
+					if (pagination) {
+						this.paginationService.setPageSize(pagination.pageSize);
+						this.paginationService.goToPage(pagination.currentPage);
+					}
 				},
 				onPresetSave: (name) => {
-					const preset = this.filterService.saveCurrentAsPreset(name);
+					const state = this.paginationService.getState();
+					const preset = this.filterService.saveCurrentAsPreset(name, {
+						pageSize: state.pageSize,
+						currentPage: state.currentPage,
+					});
 					this.savePresets();
 					this.filterBar?.updatePresets(
 						this.filterService.getPresets(),
 						preset.id
+					);
+				},
+				onPresetUpdate: (presetId) => {
+					const state = this.paginationService.getState();
+					this.filterService.updatePreset(presetId, {
+						pageSize: state.pageSize,
+						currentPage: state.currentPage,
+					});
+					this.savePresets();
+				},
+				onPresetDelete: (presetId) => {
+					this.filterService.deletePreset(presetId);
+					this.savePresets();
+					this.filterBar?.updatePresets(
+						this.filterService.getPresets(),
+						null
 					);
 				},
 			},

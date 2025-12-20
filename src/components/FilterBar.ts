@@ -54,6 +54,8 @@ export class FilterBar {
 			onSavePreset: () => {
 				this.promptSavePreset();
 			},
+			onPresetUpdate: options.onPresetUpdate,
+			onPresetDelete: options.onPresetDelete,
 		});
 	}
 

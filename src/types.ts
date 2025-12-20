@@ -17,6 +17,17 @@ export interface FilterPreset {
 	name: string;
 	filters: QuickFilter[];
 	searchQuery?: string;
+	columnFilters?: Record<string, string[]>; // propertyId -> selected values
+	pageSize?: number;
+	currentPage?: number;
+}
+
+/**
+ * Pagination settings for preset
+ */
+export interface PresetPagination {
+	pageSize: number;
+	currentPage: number;
 }
 
 /**
@@ -63,6 +74,8 @@ export interface FilterBarOptions {
 	onFiltersClear: () => void;
 	onPresetSelect: (presetId: string | null) => void;
 	onPresetSave: (name: string) => void;
+	onPresetUpdate: (presetId: string) => void;
+	onPresetDelete: (presetId: string) => void;
 }
 
 /**
@@ -125,6 +138,8 @@ export interface PresetSelectorOptions {
 	activePresetId: string | null;
 	onPresetSelect: (presetId: string | null) => void;
 	onSavePreset: () => void;
+	onPresetUpdate: (presetId: string) => void;
+	onPresetDelete: (presetId: string) => void;
 }
 
 /**

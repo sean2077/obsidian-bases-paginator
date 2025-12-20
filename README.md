@@ -12,8 +12,7 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
 - **Global Search**: Real-time search across all visible columns
 - **Column Filters**: Multi-select dropdown filters on column headers (right-click to enable)
 - **Sorting**: Click column headers to sort with natural ordering (e.g., "file2" before "file10")
-- **Filter Presets**: Save and restore filter combinations
-- **Sticky Header**: Keep table header visible when scrolling
+- **Filter Presets**: Save, update, and delete filter combinations (search + column filters)
 - **Native Rendering**: Uses Bases' native rendering for links, tags, etc.
 
 ## Limitations
@@ -60,14 +59,14 @@ views:
 
 ### View Options Reference
 
-| Option               | Type     | Default    | Description                                      |
-| -------------------- | -------- | ---------- | ------------------------------------------------ |
-| `pageSize`           | string   | `"25"`     | Items per page (`"10"`, `"25"`, `"50"`, `"100"`) |
-| `showSearchBox`      | boolean  | `true`     | Show global search input                         |
-| `filterableColumns`  | string[] | `[]`       | Columns with filter dropdowns (property IDs)     |
-| `showFilterBar`      | boolean  | `true`     | Show filter bar with search and presets          |
-| `stickyHeader`       | boolean  | `true`     | Keep table header visible when scrolling         |
-| `paginationPosition` | string   | `"top"`    | Position of pagination bar (`"top"` or `"bottom"`) |
+| Option               | Type     | Default | Description                                        |
+| -------------------- | -------- | ------- | -------------------------------------------------- |
+| `pageSize`           | string   | `"25"`  | Items per page (`"10"`, `"25"`, `"50"`, `"100"`)   |
+| `showSearchBox`      | boolean  | `true`  | Show global search input                           |
+| `filterableColumns`  | string[] | `[]`    | Columns with filter dropdowns (property IDs)       |
+| `showFilterBar`      | boolean  | `true`  | Show filter bar with search and presets            |
+| `stickyHeader`       | boolean  | `true`  | Keep table header visible when scrolling           |
+| `paginationPosition` | string   | `"top"` | Position of pagination bar (`"top"` or `"bottom"`) |
 
 ### Embedding Base Views
 

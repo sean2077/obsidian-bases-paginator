@@ -1,5 +1,5 @@
 import type { BasesEntry, BasesPropertyId } from 'obsidian';
-import type { FilterState, QuickFilter, FilterPreset } from '../types';
+import type { FilterState, QuickFilter, FilterPreset, PresetPagination } from '../types';
 import { generateId, containsIgnoreCase, safeJsonParse, valueToString, isArrayLike, toArray, splitMultiValues } from '../utils/helpers';
 
 /**
@@ -159,12 +159,18 @@ export class FilterService {
 	}
 
 	/**
-	 * Activate a preset
+	 * Activate a preset (or clear all filters if null)
+	 * Returns the preset's pagination settings if available
 	 */
-	activatePreset(presetId: string | null): void {
+	activatePreset(presetId: string | null): PresetPagination | undefined {
 		if (presetId === null) {
+			// Clear all filters when switching to default
 			this.state.activePresetId = null;
-			return;
+			this.state.searchQuery = '';
+			this.state.quickFilters = [];
+			this.columnFilters.clear();
+			this.onChange();
+			return undefined;
 		}
 
 		const preset = this.presets.find((p) => p.id === presetId);
@@ -172,23 +178,77 @@ export class FilterService {
 			this.state.activePresetId = presetId;
 			this.state.quickFilters = [...preset.filters];
 			this.state.searchQuery = preset.searchQuery ?? '';
+
+			// Restore column filters
+			this.columnFilters.clear();
+			if (preset.columnFilters) {
+				for (const [propId, values] of Object.entries(preset.columnFilters)) {
+					this.columnFilters.set(propId as BasesPropertyId, [...values]);
+				}
+			}
+
 			this.onChange();
+
+			// Return pagination settings if available
+			if (preset.pageSize !== undefined && preset.currentPage !== undefined) {
+				return { pageSize: preset.pageSize, currentPage: preset.currentPage };
+			}
 		}
+		return undefined;
+	}
+
+	/**
+	 * Convert columnFilters Map to plain object for serialization
+	 */
+	private serializeColumnFilters(): Record<string, string[]> | undefined {
+		if (this.columnFilters.size === 0) return undefined;
+		const obj: Record<string, string[]> = {};
+		for (const [propId, values] of this.columnFilters) {
+			obj[propId] = [...values];
+		}
+		return obj;
+	}
+
+	/**
+	 * Update an existing preset with current filter state
+	 */
+	updatePreset(presetId: string, pagination: PresetPagination): void {
+		const preset = this.presets.find((p) => p.id === presetId);
+		if (!preset) return;
+
+		preset.filters = [...this.state.quickFilters];
+		preset.searchQuery = this.state.searchQuery || undefined;
+		preset.columnFilters = this.serializeColumnFilters();
+		preset.pageSize = pagination.pageSize;
+		preset.currentPage = pagination.currentPage;
 	}
 
 	/**
 	 * Save current filters as a new preset
 	 */
-	saveCurrentAsPreset(name: string): FilterPreset {
+	saveCurrentAsPreset(name: string, pagination: PresetPagination): FilterPreset {
 		const preset: FilterPreset = {
 			id: generateId(),
 			name,
 			filters: [...this.state.quickFilters],
 			searchQuery: this.state.searchQuery || undefined,
+			columnFilters: this.serializeColumnFilters(),
+			pageSize: pagination.pageSize,
+			currentPage: pagination.currentPage,
 		};
 		this.presets.push(preset);
 		this.state.activePresetId = preset.id;
 		return preset;
+	}
+
+	/**
+	 * Delete a preset by ID
+	 */
+	deletePreset(presetId: string): void {
+		this.presets = this.presets.filter((p) => p.id !== presetId);
+		if (this.state.activePresetId === presetId) {
+			this.state.activePresetId = null;
+		}
 	}
 
 	// --- Filtering Logic ---
