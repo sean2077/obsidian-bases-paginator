@@ -1,3 +1,10 @@
+## [1.3.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.2.1...1.3.0) (2025-12-20)
+
+### Features
+
+* add full preset CRUD and save pagination state ([7993ce7](https://github.com/sean2077/obsidian-bases-paginator/commit/7993ce7c506aebd09f5f44e6425407a8b571ef8d))
+* add natural sorting, fix sticky header, and optimize code ([2c89f84](https://github.com/sean2077/obsidian-bases-paginator/commit/2c89f848dfa6a723df3914ffcf2e1fe8e207d6aa))
+
 ## [1.2.1](https://github.com/sean2077/obsidian-bases-paginator/compare/1.2.0...1.2.1) (2025-12-19)
 
 ### Fixes
