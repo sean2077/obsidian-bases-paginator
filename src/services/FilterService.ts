@@ -1,6 +1,6 @@
 import type { BasesEntry, BasesPropertyId } from 'obsidian';
 import type { FilterState, QuickFilter, FilterPreset } from '../types';
-import { generateId, containsIgnoreCase, safeJsonParse, valueToString } from '../utils/helpers';
+import { generateId, containsIgnoreCase, safeJsonParse, valueToString, isArrayLike, toArray, splitMultiValues } from '../utils/helpers';
 
 /**
  * Service for managing filter state and applying filters to data
@@ -245,16 +245,18 @@ export class FilterService {
 	}
 
 	/**
-	 * Extract all values from a cell (handles arrays/lists)
+	 * Extract all values from a cell (handles arrays/lists and multi-value strings)
 	 */
 	private extractAllValues(value: unknown): string[] {
 		if (value === null || value === undefined) {
 			return [''];
 		}
-		if (Array.isArray(value)) {
-			return value.map((item) => valueToString(item));
+		if (isArrayLike(value)) {
+			return toArray(value).map((item) => valueToString(item));
 		}
-		return [valueToString(value)];
+		// Handle multi-value strings like "[[a]], [[b]]" from Bases Value objects
+		const strVal = valueToString(value);
+		return splitMultiValues(strVal);
 	}
 
 	/**
@@ -305,8 +307,8 @@ export class FilterService {
 		if (value === null || value === undefined) {
 			return '';
 		}
-		if (Array.isArray(value)) {
-			return value.map((item) => valueToString(item)).join(' ');
+		if (isArrayLike(value)) {
+			return toArray(value).map((item) => valueToString(item)).join(' ');
 		}
 		return valueToString(value);
 	}

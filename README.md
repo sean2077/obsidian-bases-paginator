@@ -1,6 +1,6 @@
 # Bases Paginator
 
-A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view with column filtering capabilities to Obsidian Bases.
+A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view with column filtering to Obsidian Bases.
 
 > **Note:** Requires Obsidian v1.10.0+ with the Bases core plugin enabled.
 
@@ -8,50 +8,20 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
 
 ## Features
 
-### Pagination
-- Navigate through large datasets with ease
-- Preset page sizes: 10, 25, 50, 100 items per page
-- Custom page size input support
-- First/Previous/Next/Last page navigation with ±10 page jumps
-- Display current page and total item count
-
-### Column Filtering
+- **Pagination**: Navigate large datasets with configurable page sizes (10/25/50/100)
 - **Global Search**: Real-time search across all visible columns
-- **Column Filters**: Multi-select dropdown filters on column headers
-- **Right-click Menu**: Right-click any column header to enable/disable filtering or sort
-- **Filter Chips**: Visual tags showing active filters with one-click removal
-- **Clear All**: Remove all filters with a single click
-
-### Filter Presets
-- Save frequently used filter combinations
-- Quick preset selector dropdown
-- Presets are stored per-view in your `.base` file
-
-### Sorting
-- Click column headers to sort (ascending/descending)
-- Right-click column headers for sort options
-- Visual indicators show current sort state
-
-### Display Options
-- Configurable pagination position (top or bottom)
-- Sticky header support
-- Show/hide filter bar and search box
-- Native Bases rendering for cell values (links, tags, etc.)
+- **Column Filters**: Multi-select dropdown filters on column headers (right-click to enable)
+- **Sorting**: Click column headers to sort with natural ordering (e.g., "file2" before "file10")
+- **Filter Presets**: Save and restore filter combinations
+- **Sticky Header**: Keep table header visible when scrolling
+- **Native Rendering**: Uses Bases' native rendering for links, tags, etc.
 
 ## Limitations
 
-> **Important:** This is a custom view implementation, not an extension of the native Bases table.
+This is a **read-only** custom view. Due to Bases API limitations:
 
-Due to Bases API limitations, the following features are **not available**:
-
-- **Cell Editing**: Cannot edit cell values directly in the table. To edit data, use the native Bases Table view or edit the source file directly.
-- **Inline Add/Delete**: Cannot add or delete list items by clicking cells.
-- **Row Creation**: Cannot create new rows from within this view (use `createFileForView` API or native views).
-
-These limitations exist because:
-1. `BasesView` is an abstract class that only provides read-only data access (`getValue()`)
-2. The `Value.renderTo()` method only renders display, without edit capabilities
-3. Native table editing is implemented internally and not exposed through public APIs
+- Cannot edit cell values (use native Bases Table view or edit source files)
+- Cannot add/delete rows or list items
 
 ## Usage
 

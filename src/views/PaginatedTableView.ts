@@ -8,7 +8,7 @@ import {
 } from 'obsidian';
 
 import type { SortDirection, SortState, BasesPaginatorSettings } from '../types';
-import { valueToString } from '../utils/helpers';
+import { valueToString, isArrayLike, toArray, naturalCompare, splitMultiValues } from '../utils/helpers';
 import { VIEW_TYPE, CSS_CLASSES, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { PaginationService } from '../services/PaginationService';
 import { FilterService } from '../services/FilterService';
@@ -301,6 +301,12 @@ export class PaginatedTableView extends BasesView {
 	private extractUniqueValues(entries: BasesEntry[], filterableColumns: BasesPropertyId[]): Map<BasesPropertyId, string[]> {
 		const result = new Map<BasesPropertyId, string[]>();
 
+		const addValue = (set: Set<string>, strVal: string) => {
+			if (strVal && strVal !== 'null') {
+				set.add(strVal);
+			}
+		};
+
 		for (const propId of filterableColumns) {
 			const uniqueValues = new Set<string>();
 
@@ -310,24 +316,22 @@ export class PaginatedTableView extends BasesView {
 					continue;
 				}
 
-				// Handle arrays (like tags)
-				if (Array.isArray(value)) {
-					for (const item of value) {
-						const strVal = valueToString(item);
-						if (strVal && strVal !== 'null') {
-							uniqueValues.add(strVal);
-						}
+				// Handle arrays and array-like objects (like tags, links)
+				if (isArrayLike(value)) {
+					for (const item of toArray(value)) {
+						addValue(uniqueValues, valueToString(item));
 					}
 				} else {
+					// Convert to string and split multi-value wikilinks if present
 					const strVal = valueToString(value);
-					if (strVal && strVal !== 'null') {
-						uniqueValues.add(strVal);
+					for (const part of splitMultiValues(strVal)) {
+						addValue(uniqueValues, part);
 					}
 				}
 			}
 
-			// Sort values alphabetically
-			result.set(propId, Array.from(uniqueValues).sort());
+			// Sort values using natural sort
+			result.set(propId, Array.from(uniqueValues).sort(naturalCompare));
 		}
 
 		return result;
@@ -388,36 +392,52 @@ export class PaginatedTableView extends BasesView {
 			const valueA = a.getValue(propId);
 			const valueB = b.getValue(propId);
 
+			// Handle null/undefined/empty values - always sort to the end regardless of direction
+			const aIsEmpty = this.isEmptyValue(valueA);
+			const bIsEmpty = this.isEmptyValue(valueB);
+
+			if (aIsEmpty && bIsEmpty) return 0;
+			if (aIsEmpty) return 1; // Empty values always go to the end
+			if (bIsEmpty) return -1;
+
 			const comparison = this.compareValues(valueA, valueB);
 			return direction === 'ASC' ? comparison : -comparison;
 		});
 	}
 
 	/**
-	 * Compare two values for sorting
+	 * Check if a value is empty (null, undefined, empty string, or "null" string)
+	 */
+	private isEmptyValue(value: unknown): boolean {
+		if (value === null || value === undefined) return true;
+		const strVal = valueToString(value);
+		return strVal === '' || strVal === 'null';
+	}
+
+	/**
+	 * Compare two values for sorting (uses natural sort)
+	 * Values are converted to strings for consistent comparison
 	 */
 	private compareValues(a: unknown, b: unknown): number {
-		// Handle null/undefined values
-		if (a == null && b == null) return 0;
-		if (a == null) return -1;
-		if (b == null) return 1;
-
-		// Compare based on type
-		if (typeof a === 'string' && typeof b === 'string') {
-			return a.localeCompare(b);
-		}
+		// For numbers, compare numerically
 		if (typeof a === 'number' && typeof b === 'number') {
 			return a - b;
 		}
+
+		// For dates, compare by timestamp
 		if (a instanceof Date && b instanceof Date) {
 			return a.getTime() - b.getTime();
 		}
+
+		// For booleans, compare as 0/1
 		if (typeof a === 'boolean' && typeof b === 'boolean') {
 			return (a ? 1 : 0) - (b ? 1 : 0);
 		}
 
-		// Fallback to string comparison using safe conversion
-		return valueToString(a).localeCompare(valueToString(b));
+		// For everything else (including Bases Value objects), convert to string and use natural sort
+		const strA = valueToString(a);
+		const strB = valueToString(b);
+		return naturalCompare(strA, strB);
 	}
 
 	/**

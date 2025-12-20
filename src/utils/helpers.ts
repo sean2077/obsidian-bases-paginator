@@ -94,3 +94,72 @@ export function valueToString(value: unknown): string {
 export function containsIgnoreCase(str: string, search: string): boolean {
 	return str.toLowerCase().includes(search.toLowerCase());
 }
+
+/**
+ * Check if a value is array-like (array, iterable, or has numeric length with indexed elements)
+ */
+export function isArrayLike(value: unknown): boolean {
+	if (value === null || value === undefined) return false;
+	if (typeof value === 'string') return false; // Strings should not be expanded
+	if (Array.isArray(value)) return true;
+
+	if (typeof value === 'object') {
+		// Check for iterable objects with Symbol.iterator
+		if (Symbol.iterator in value) return true;
+
+		// Check for array-like objects (has numeric length property and indexed elements)
+		const obj = value as Record<string, unknown>;
+		if (typeof obj.length === 'number' && obj.length >= 0 && Number.isInteger(obj.length)) {
+			return obj.length === 0 || '0' in obj;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Convert an array-like value to an array. Non-array values return [value].
+ */
+export function toArray(value: unknown): unknown[] {
+	if (Array.isArray(value)) return value;
+	if (!isArrayLike(value)) return [value];
+
+	// Handle iterable objects
+	if (typeof value === 'object' && value !== null && Symbol.iterator in value) {
+		return Array.from(value as Iterable<unknown>);
+	}
+
+	// Handle array-like objects with length property
+	const obj = value as Record<string, unknown>;
+	const result: unknown[] = [];
+	for (let i = 0; i < (obj.length as number); i++) {
+		result.push(obj[i]);
+	}
+	return result;
+}
+
+/**
+ * Natural string comparison (handles numeric parts correctly)
+ * e.g., "file2" < "file10" instead of "file10" < "file2"
+ */
+export function naturalCompare(a: string, b: string): number {
+	return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+/**
+ * Split a multi-value string into individual values.
+ * Handles wikilink format: "[[a]], [[b]]" -> ["[[a]]", "[[b]]"]
+ *
+ * If the string doesn't contain multiple wikilinks, returns [str].
+ */
+export function splitMultiValues(str: string): string[] {
+	if (!str) return [str];
+
+	// Check for wikilink format: [[...]], [[...]]
+	const wikiLinkMatches = str.match(/\[\[[^\]]+\]\]/g);
+	if (wikiLinkMatches && wikiLinkMatches.length > 1) {
+		return wikiLinkMatches;
+	}
+
+	return [str];
+}
