@@ -12,7 +12,7 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
 - **Global Search**: Real-time search across all visible columns
 - **Column Filters**: Multi-select dropdown filters on column headers (right-click to enable)
 - **Sorting**: Click column headers to sort with natural ordering (e.g., "file2" before "file10")
-- **Filter Presets**: Save, update, and delete filter combinations (search + column filters)
+- **Filter Presets**: Save, update, and delete complete view state (search, column filters, page size, current page)
 - **Native Rendering**: Uses Bases' native rendering for links, tags, etc.
 
 ## Limitations
