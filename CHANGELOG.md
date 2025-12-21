@@ -1,3 +1,9 @@
+## [1.4.1](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.0...1.4.1) (2025-12-21)
+
+### Fixes
+
+* list rendering and code optimization ([d1e86de](https://github.com/sean2077/obsidian-bases-paginator/commit/d1e86de1555846b89749d959cb8a3a062b9cee09))
+
 ## [1.4.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.3.0...1.4.0) (2025-12-21)
 
 ### Features
