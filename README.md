@@ -13,6 +13,8 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
 - **Column Filters**: Multi-select dropdown filters on column headers (right-click to enable)
 - **Sorting**: Click column headers to sort with natural ordering (e.g., "file2" before "file10")
 - **Filter Presets**: Save, update, and delete complete view state (search, column filters, page size, current page)
+- **List Rendering**: Configurable display for multi-value properties (line-by-line with bullets or comma-separated)
+- **Column Reordering**: Drag column headers to rearrange columns (order is persisted per view)
 - **Native Rendering**: Uses Bases' native rendering for links, tags, etc.
 
 ## Limitations
@@ -36,6 +38,8 @@ This is a **read-only** custom view. Due to Bases API limitations:
    - Show/hide filter bar
    - Sticky header
    - Pagination position (top/bottom)
+   - List rendering mode (line-by-line or comma-separated)
+5. Drag column headers to reorder columns
 
 ### In Markdown (Base Code Block)
 
@@ -54,19 +58,22 @@ views:
     showFilterBar: true
     stickyHeader: true
     paginationPosition: "top"
+    listRenderMode: "comma"
 ```
 ````
 
 ### View Options Reference
 
-| Option               | Type     | Default | Description                                        |
-| -------------------- | -------- | ------- | -------------------------------------------------- |
-| `pageSize`           | string   | `"25"`  | Items per page (`"10"`, `"25"`, `"50"`, `"100"`)   |
-| `showSearchBox`      | boolean  | `true`  | Show global search input                           |
-| `filterableColumns`  | string[] | `[]`    | Columns with filter dropdowns (property IDs)       |
-| `showFilterBar`      | boolean  | `true`  | Show filter bar with search and presets            |
-| `stickyHeader`       | boolean  | `true`  | Keep table header visible when scrolling           |
-| `paginationPosition` | string   | `"top"` | Position of pagination bar (`"top"` or `"bottom"`) |
+| Option               | Type     | Default    | Description                                           |
+| -------------------- | -------- | ---------- | ----------------------------------------------------- |
+| `pageSize`           | string   | `"25"`     | Items per page (`"10"`, `"25"`, `"50"`, `"100"`)      |
+| `showSearchBox`      | boolean  | `true`     | Show global search input                              |
+| `filterableColumns`  | string[] | `[]`       | Columns with filter dropdowns (property IDs)          |
+| `showFilterBar`      | boolean  | `true`     | Show filter bar with search and presets               |
+| `stickyHeader`       | boolean  | `true`     | Keep table header visible when scrolling              |
+| `paginationPosition` | string   | `"top"`    | Position of pagination bar (`"top"` or `"bottom"`)    |
+| `listRenderMode`     | string   | `"comma"`  | List rendering (`"bullet"` for line-by-line, `"comma"` for comma-separated) |
+| `columnOrder`        | string[] | `[]`       | Custom column order (auto-managed by drag-to-reorder) |
 
 ### Embedding Base Views
 

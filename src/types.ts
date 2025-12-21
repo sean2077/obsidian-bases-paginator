@@ -84,6 +84,16 @@ export interface FilterBarOptions {
 export type SortDirection = 'ASC' | 'DESC';
 
 /**
+ * List/array rendering mode for table cells
+ */
+export type ListRenderMode = 'bullet' | 'comma';
+
+/**
+ * Column reorder callback
+ */
+export type ColumnReorderCallback = (fromIndex: number, toIndex: number) => void;
+
+/**
  * Current sort state
  */
 export interface SortState {
@@ -99,9 +109,11 @@ export interface TableRendererOptions {
 	filterableColumns: BasesPropertyId[];
 	columnFilterData: Map<BasesPropertyId, string[]>;
 	selectedColumnFilters: Map<BasesPropertyId, string[]>;
+	listRenderMode: ListRenderMode;
 	onSort: (propertyId: BasesPropertyId, direction: SortDirection) => void;
 	onColumnFilterChange: (propertyId: BasesPropertyId, values: string[]) => void;
 	onToggleFilterable?: (propertyId: BasesPropertyId, enable: boolean) => void;
+	onColumnReorder?: ColumnReorderCallback;
 }
 
 /**

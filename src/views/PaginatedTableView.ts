@@ -7,7 +7,7 @@ import {
 	type ViewOption,
 } from 'obsidian';
 
-import type { SortDirection, SortState, BasesPaginatorSettings } from '../types';
+import type { SortDirection, SortState, BasesPaginatorSettings, ListRenderMode } from '../types';
 import { valueToString, isArrayLike, toArray, naturalCompare, splitMultiValues } from '../utils/helpers';
 import { VIEW_TYPE, CSS_CLASSES, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { PaginationService } from '../services/PaginationService';
@@ -41,6 +41,8 @@ export class PaginatedTableView extends BasesView {
 		propertyId: null,
 		direction: 'ASC',
 	};
+
+	private customColumnOrder: BasesPropertyId[] = [];
 
 	private initialized = false;
 
@@ -109,6 +111,12 @@ export class PaginatedTableView extends BasesView {
 		const presetsJson = this.getConfigValue('filterPresets', VIEW_OPTION_DEFAULTS.filterPresets);
 		this.filterService.loadPresets(presetsJson);
 
+		// Load saved column order
+		const savedOrder = this.config.get('columnOrder');
+		if (Array.isArray(savedOrder)) {
+			this.customColumnOrder = savedOrder.filter((s): s is string => typeof s === 'string' && s.length > 0) as BasesPropertyId[];
+		}
+
 		// Filter bar
 		this.filterBar = new FilterBar(
 			this.filterBarEl,
@@ -173,6 +181,7 @@ export class PaginatedTableView extends BasesView {
 				filterableColumns: this.getFilterableColumns(),
 				columnFilterData: new Map(),
 				selectedColumnFilters: new Map(),
+				listRenderMode: this.getConfigValue('listRenderMode', VIEW_OPTION_DEFAULTS.listRenderMode) as ListRenderMode,
 				onSort: (propId, direction) => {
 					this.handleSort(propId, direction);
 				},
@@ -181,6 +190,9 @@ export class PaginatedTableView extends BasesView {
 				},
 				onToggleFilterable: (propId, enable) => {
 					this.toggleFilterableColumn(propId, enable);
+				},
+				onColumnReorder: (fromIndex, toIndex) => {
+					this.handleColumnReorder(fromIndex, toIndex);
 				},
 			}
 		);
@@ -262,6 +274,7 @@ export class PaginatedTableView extends BasesView {
 			filterableColumns,
 			columnFilterData,
 			selectedColumnFilters: this.filterService.getColumnFilters(),
+			listRenderMode: this.getConfigValue('listRenderMode', VIEW_OPTION_DEFAULTS.listRenderMode) as ListRenderMode,
 		});
 
 		// Apply filters
@@ -294,11 +307,36 @@ export class PaginatedTableView extends BasesView {
 	}
 
 	/**
-	 * Get visible properties from config
+	 * Get visible properties with custom order applied
 	 */
 	private getVisibleProperties(): BasesPropertyId[] {
-		// Use the properties from data result, which respects column visibility
-		return this.data.properties;
+		const baseProperties = this.data.properties;
+
+		// If no custom order, return base properties
+		if (this.customColumnOrder.length === 0) {
+			return baseProperties;
+		}
+
+		// Apply custom order, handling added/removed columns
+		const ordered: BasesPropertyId[] = [];
+		const remaining = new Set(baseProperties);
+
+		// First, add columns in custom order (if they still exist)
+		for (const propId of this.customColumnOrder) {
+			if (remaining.has(propId)) {
+				ordered.push(propId);
+				remaining.delete(propId);
+			}
+		}
+
+		// Then, add any new columns not in custom order
+		for (const propId of baseProperties) {
+			if (remaining.has(propId)) {
+				ordered.push(propId);
+			}
+		}
+
+		return ordered;
 	}
 
 	/**
@@ -398,6 +436,33 @@ export class PaginatedTableView extends BasesView {
 		this.config.set('filterableColumns', newColumns);
 
 		// Re-render to update UI
+		this.renderData();
+	}
+
+	/**
+	 * Handle column reorder from drag-and-drop
+	 */
+	private handleColumnReorder(fromIndex: number, toIndex: number): void {
+		const properties = this.getVisibleProperties();
+
+		// Validate indices
+		if (fromIndex < 0 || fromIndex >= properties.length) return;
+		if (toIndex < 0 || toIndex >= properties.length) return;
+
+		// Create new order
+		const newOrder = [...properties];
+		const removed = newOrder.splice(fromIndex, 1);
+		const movedItem = removed[0];
+		if (!movedItem) return;
+		newOrder.splice(toIndex, 0, movedItem);
+
+		// Update state
+		this.customColumnOrder = newOrder;
+
+		// Persist to config
+		this.config.set('columnOrder', newOrder);
+
+		// Re-render
 		this.renderData();
 	}
 

@@ -58,6 +58,25 @@ export function getViewOptions(): ViewOption[] {
 				'bottom': 'Bottom',
 			},
 		} as ViewOption,
+
+		// List rendering mode
+		{
+			type: 'dropdown',
+			key: 'listRenderMode',
+			displayName: 'List rendering',
+			options: {
+				'bullet': 'Line-by-line',
+				'comma': 'Comma-separated',
+			},
+		} as ViewOption,
+
+		// Column order (internal, populated by drag-to-reorder)
+		{
+			type: 'multitext',
+			key: 'columnOrder',
+			displayName: 'Column order',
+			default: [],
+		} as ViewOption,
 	];
 }
 
@@ -72,4 +91,6 @@ export const VIEW_OPTION_DEFAULTS = {
 	stickyHeader: true,
 	filterPresets: '[]',
 	paginationPosition: 'top',
+	listRenderMode: 'comma',
+	columnOrder: [] as string[],
 };

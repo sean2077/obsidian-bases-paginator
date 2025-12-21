@@ -79,6 +79,16 @@ export const CSS_CLASSES = {
 	tableCell: `${CSS_PREFIX}-table-cell`,
 	tableCellEmpty: `${CSS_PREFIX}-table-cell-empty`,
 
+	// List rendering
+	tableCellList: `${CSS_PREFIX}-table-cell-list`,
+	tableCellListItem: `${CSS_PREFIX}-table-cell-list-item`,
+	tableCellListBullet: `${CSS_PREFIX}-table-cell-list-bullet`,
+
+	// Column drag-to-reorder
+	tableHeaderDraggable: `${CSS_PREFIX}-table-header-draggable`,
+	tableHeaderDragging: `${CSS_PREFIX}-table-header-dragging`,
+	tableHeaderDragOver: `${CSS_PREFIX}-table-header-drag-over`,
+
 	// Pagination bar
 	paginationBar: `${CSS_PREFIX}-pagination-bar`,
 	navContainer: `${CSS_PREFIX}-nav-container`,
