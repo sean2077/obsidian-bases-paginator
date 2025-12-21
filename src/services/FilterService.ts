@@ -1,6 +1,6 @@
 import type { BasesEntry, BasesPropertyId } from 'obsidian';
 import type { FilterState, QuickFilter, FilterPreset, PresetPagination } from '../types';
-import { generateId, containsIgnoreCase, safeJsonParse, valueToString, isArrayLike, toArray, splitMultiValues } from '../utils/helpers';
+import { generateId, containsIgnoreCase, safeJsonParse, valueToString, extractValueItems } from '../utils/helpers';
 
 /**
  * Service for managing filter state and applying filters to data
@@ -254,122 +254,111 @@ export class FilterService {
 	// --- Filtering Logic ---
 
 	/**
-	 * Apply all active filters to entries
+	 * Check if any filters are currently active
 	 */
-	filterEntries(entries: BasesEntry[]): BasesEntry[] {
-		let result = entries;
-
-		// Apply search query filter
-		if (this.state.searchQuery) {
-			result = this.applySearchFilter(result, this.state.searchQuery);
-		}
-
-		// Apply quick filters
-		for (const filter of this.state.quickFilters) {
-			result = this.applyQuickFilter(result, filter);
-		}
-
-		// Apply column filters
-		result = this.applyColumnFilters(result);
-
-		return result;
+	private hasActiveFilters(): boolean {
+		return (
+			this.state.searchQuery !== '' ||
+			this.state.quickFilters.length > 0 ||
+			this.columnFilters.size > 0
+		);
 	}
 
 	/**
-	 * Apply column filters (multi-select OR logic within column)
+	 * Apply all active filters to entries (single-pass optimization)
 	 */
-	private applyColumnFilters(entries: BasesEntry[]): BasesEntry[] {
-		if (this.columnFilters.size === 0) {
+	filterEntries(entries: BasesEntry[]): BasesEntry[] {
+		if (!this.hasActiveFilters()) {
 			return entries;
 		}
 
+		const lowerQuery = this.state.searchQuery.toLowerCase();
+
 		return entries.filter((entry) => {
-			// All column filters must match (AND between columns)
-			for (const [propId, selectedValues] of this.columnFilters) {
-				if (selectedValues.length === 0) continue;
+			// Check search query
+			if (lowerQuery && !this.matchesSearch(entry, lowerQuery)) {
+				return false;
+			}
 
-				const value = entry.getValue(propId);
-				const entryValues = this.extractAllValues(value);
-
-				// At least one selected value must match (OR within column)
-				const hasMatch = selectedValues.some((selectedVal) =>
-					entryValues.some((entryVal) => entryVal === selectedVal)
-				);
-
-				if (!hasMatch) {
+			// Check quick filters (all must match)
+			for (const filter of this.state.quickFilters) {
+				if (!this.matchesQuickFilter(entry, filter)) {
 					return false;
 				}
 			}
-			return true;
+
+			// Check column filters
+			return this.matchesColumnFilters(entry);
 		});
 	}
 
 	/**
-	 * Extract all values from a cell (handles arrays/lists and multi-value strings)
+	 * Check if entry matches search query
+	 */
+	private matchesSearch(entry: BasesEntry, lowerQuery: string): boolean {
+		for (const propId of this.visibleProperties) {
+			const value = entry.getValue(propId);
+			if (value !== null && value !== undefined) {
+				const strValue = valueToString(value);
+				if (containsIgnoreCase(strValue, lowerQuery)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check if entry matches a single quick filter
+	 */
+	private matchesQuickFilter(entry: BasesEntry, filter: QuickFilter): boolean {
+		const value = entry.getValue(filter.propertyId);
+		const strValue = valueToString(value);
+
+		switch (filter.operator) {
+			case 'equals':
+				return strValue === filter.value;
+			case 'contains':
+				return containsIgnoreCase(strValue, filter.value);
+			case 'not_equals':
+				return strValue !== filter.value;
+			default:
+				return true;
+		}
+	}
+
+	/**
+	 * Check if entry matches all column filters (AND between columns, OR within column)
+	 */
+	private matchesColumnFilters(entry: BasesEntry): boolean {
+		for (const [propId, selectedValues] of this.columnFilters) {
+			if (selectedValues.length === 0) continue;
+
+			const value = entry.getValue(propId);
+			const entryValues = this.extractAllValues(value);
+
+			// At least one selected value must match (OR within column)
+			const hasMatch = selectedValues.some((selectedVal) =>
+				entryValues.some((entryVal) => entryVal === selectedVal)
+			);
+
+			if (!hasMatch) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Extract all values from a cell for filtering.
+	 * Returns [''] for null/undefined to enable matching empty values.
 	 */
 	private extractAllValues(value: unknown): string[] {
 		if (value === null || value === undefined) {
 			return [''];
 		}
-		if (isArrayLike(value)) {
-			return toArray(value).map((item) => valueToString(item));
-		}
-		// Handle multi-value strings like "[[a]], [[b]]" from Bases Value objects
-		const strVal = valueToString(value);
-		return splitMultiValues(strVal);
+		const items = extractValueItems(value);
+		return items.length > 0 ? items : [valueToString(value)];
 	}
 
-	/**
-	 * Apply search filter across all visible properties
-	 */
-	private applySearchFilter(entries: BasesEntry[], query: string): BasesEntry[] {
-		const lowerQuery = query.toLowerCase();
-
-		return entries.filter((entry) => {
-			for (const propId of this.visibleProperties) {
-				const value = entry.getValue(propId);
-				if (value !== null && value !== undefined) {
-					const strValue = this.valueToSearchString(value);
-					if (containsIgnoreCase(strValue, lowerQuery)) {
-						return true;
-					}
-				}
-			}
-			return false;
-		});
-	}
-
-	/**
-	 * Apply a single quick filter
-	 */
-	private applyQuickFilter(entries: BasesEntry[], filter: QuickFilter): BasesEntry[] {
-		return entries.filter((entry) => {
-			const value = entry.getValue(filter.propertyId);
-			const strValue = this.valueToSearchString(value);
-
-			switch (filter.operator) {
-				case 'equals':
-					return strValue === filter.value;
-				case 'contains':
-					return containsIgnoreCase(strValue, filter.value);
-				case 'not_equals':
-					return strValue !== filter.value;
-				default:
-					return true;
-			}
-		});
-	}
-
-	/**
-	 * Convert a value to a searchable string
-	 */
-	private valueToSearchString(value: unknown): string {
-		if (value === null || value === undefined) {
-			return '';
-		}
-		if (isArrayLike(value)) {
-			return toArray(value).map((item) => valueToString(item)).join(' ');
-		}
-		return valueToString(value);
-	}
 }

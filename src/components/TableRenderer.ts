@@ -1,7 +1,7 @@
-import { Menu, setIcon, TFile, Value, type App, type BasesEntry, type BasesPropertyId, type BasesViewConfig } from 'obsidian';
+import { ListValue, Menu, setIcon, TFile, Value, type App, type BasesEntry, type BasesPropertyId, type BasesViewConfig } from 'obsidian';
 import type { SortDirection, SortState, TableRendererOptions } from '../types';
-import { CSS_CLASSES } from '../utils/constants';
-import { valueToString as safeValueToString, isArrayLike, toArray, splitMultiValues } from '../utils/helpers';
+import { CSS_CLASSES, WIKILINK_PATTERN, COLUMN_INDEX_ATTR } from '../utils/constants';
+import { valueToString, isEmptyValue, extractValueItems } from '../utils/helpers';
 import { ColumnFilterMenu } from './ColumnFilterMenu';
 
 /**
@@ -98,7 +98,7 @@ export class TableRenderer {
 
 			// Make header draggable
 			th.setAttribute('draggable', 'true');
-			th.dataset.columnIndex = String(i);
+			th.dataset[COLUMN_INDEX_ATTR.datasetKey] = String(i);
 
 			// Setup drag handlers
 			this.setupDragHandlers(th, i);
@@ -127,7 +127,7 @@ export class TableRenderer {
 				// Don't sort if clicking on filter icon or during drag
 				if (this.dragState.draggingIndex !== null) return;
 				const target = e.target as HTMLElement;
-				if (!target.closest('.bp-column-filter-btn')) {
+				if (!target.closest(`.${CSS_CLASSES.columnFilterBtn}`)) {
 					this.handleHeaderClick(propId);
 				}
 			});
@@ -201,13 +201,15 @@ export class TableRenderer {
 	}
 
 	/**
-	 * Clear all drag-over states from headers
+	 * Clear drag-over state from the currently tracked header (optimized single-element query)
 	 */
 	private clearDragOverStates(): void {
-		const headers = this.tableEl?.querySelectorAll('th');
-		headers?.forEach((th) => {
-			th.removeClass(CSS_CLASSES.tableHeaderDragOver);
-		});
+		if (this.dragState.dragOverIndex !== null && this.tableEl) {
+			const th = this.tableEl.querySelector(
+				`th[${COLUMN_INDEX_ATTR.selector}="${this.dragState.dragOverIndex}"]`
+			);
+			th?.removeClass(CSS_CLASSES.tableHeaderDragOver);
+		}
 	}
 
 	/**
@@ -270,11 +272,11 @@ export class TableRenderer {
 		const selectedFilters = this.options.selectedColumnFilters.get(propId) || [];
 		const hasActiveFilter = selectedFilters.length > 0;
 
-		const filterBtn = container.createSpan({ cls: 'bp-column-filter-btn' });
+		const filterBtn = container.createSpan({ cls: CSS_CLASSES.columnFilterBtn });
 		setIcon(filterBtn, 'filter');
 
 		if (hasActiveFilter) {
-			filterBtn.addClass('bp-column-filter-active');
+			filterBtn.addClass(CSS_CLASSES.columnFilterActive);
 		}
 
 		filterBtn.addEventListener('click', (e) => {
@@ -361,28 +363,6 @@ export class TableRenderer {
 	}
 
 	/**
-	 * Check if a value is empty
-	 */
-	private isEmptyValue(value: unknown): boolean {
-		if (value === null || value === undefined) return true;
-		if (value === '' || value === 'null') return true;
-		if (Array.isArray(value) && value.length === 0) return true;
-		// Check for Bases NullValue objects (toString() returns "null")
-		if (typeof value === 'object' && value !== null) {
-			// Check if it's a Value object with isTruthy method
-			if ('isTruthy' in value && typeof (value as { isTruthy: () => boolean }).isTruthy === 'function') {
-				if (!(value as { isTruthy: () => boolean }).isTruthy()) {
-					return true;
-				}
-			}
-			// Also check string representation
-			const str = safeValueToString(value);
-			if (str === 'null' || str === '') return true;
-		}
-		return false;
-	}
-
-	/**
 	 * Render a cell value using Bases' native Value.renderTo() method
 	 */
 	private renderCellValue(
@@ -392,7 +372,7 @@ export class TableRenderer {
 		file?: TFile
 	): void {
 		// Handle empty values
-		if (this.isEmptyValue(value)) {
+		if (isEmptyValue(value)) {
 			td.addClass(CSS_CLASSES.tableCellEmpty);
 			td.setText('-');
 			return;
@@ -401,23 +381,12 @@ export class TableRenderer {
 		// Special handling for file.name property - make it a clickable link
 		if (propId === 'file.name' && file) {
 			const link = td.createEl('a', {
-				text: safeValueToString(value),
+				text: valueToString(value),
 				cls: 'internal-link',
 				attr: { 'data-href': file.path },
 			});
-			link.addEventListener('click', (e) => {
-				e.preventDefault();
-				e.stopPropagation();
+			this.setupLinkHandlers(link, td, file.path, () => {
 				void this.app.workspace.getLeaf().openFile(file);
-			});
-			link.addEventListener('mouseover', (e) => {
-				this.app.workspace.trigger('hover-link', {
-					event: e,
-					source: 'bases-paginator',
-					hoverParent: td,
-					targetEl: link,
-					linktext: file.path,
-				});
 			});
 			return;
 		}
@@ -438,36 +407,24 @@ export class TableRenderer {
 			value.renderTo(td, this.app.renderContext);
 		} else {
 			// Fallback for non-Value types
-			td.setText(safeValueToString(value));
+			td.setText(valueToString(value));
 		}
 	}
 
 	/**
-	 * Check if a value should be rendered as a list (has multiple items)
+	 * Check if a value should be rendered as a list.
+	 * Uses Obsidian's ListValue type for accurate detection.
 	 */
 	private isListValue(value: unknown): boolean {
-		// Check for array-like values
-		if (isArrayLike(value)) {
-			const arr = toArray(value);
-			return arr.length > 1;
-		}
+		return value instanceof ListValue;
+	}
 
-		// Check for Value objects that may contain multiple wikilinks
-		if (value instanceof Value) {
-			const str = value.toString();
-			const wikiLinks = str.match(/\[\[[^\]]+\]\]/g);
-			if (wikiLinks && wikiLinks.length > 1) {
-				return true;
-			}
-		}
-
-		// Check for string with multiple wikilinks
-		if (typeof value === 'string') {
-			const parts = splitMultiValues(value);
-			return parts.length > 1;
-		}
-
-		return false;
+	/**
+	 * Extract items from a list value for rendering.
+	 * Uses the shared extractValueItems helper which handles Bases Value objects.
+	 */
+	private getListItems(value: unknown): string[] {
+		return extractValueItems(value);
 	}
 
 	/**
@@ -477,25 +434,7 @@ export class TableRenderer {
 		td.addClass(CSS_CLASSES.tableCellList);
 
 		const listContainer = td.createDiv({ cls: CSS_CLASSES.tableCellList });
-
-		// Get the array items
-		let items: unknown[];
-		if (value instanceof Value) {
-			// Extract items from Value string representation
-			const str = value.toString();
-			const wikiLinks = str.match(/\[\[[^\]]+\]\]/g);
-			if (wikiLinks) {
-				items = wikiLinks;
-			} else {
-				items = str.split(',').map((s) => s.trim()).filter((s) => s);
-			}
-		} else if (isArrayLike(value)) {
-			items = toArray(value);
-		} else if (typeof value === 'string') {
-			items = splitMultiValues(value);
-		} else {
-			items = [value];
-		}
+		const items = this.getListItems(value);
 
 		for (const item of items) {
 			const itemEl = listContainer.createDiv({ cls: CSS_CLASSES.tableCellListItem });
@@ -505,13 +444,10 @@ export class TableRenderer {
 			bulletEl.setText('\u2022'); // Unicode bullet
 
 			// Render the item content
-			if (item instanceof Value) {
-				item.renderTo(itemEl, this.app.renderContext);
-			} else if (typeof item === 'string' && item.startsWith('[[')) {
-				// Handle wikilink strings - render as internal link
+			if (item.startsWith('[[')) {
 				this.renderWikiLink(itemEl, item);
 			} else {
-				itemEl.createSpan({ text: safeValueToString(item) });
+				itemEl.createSpan({ text: item });
 			}
 		}
 	}
@@ -520,37 +456,45 @@ export class TableRenderer {
 	 * Render a value as comma-separated inline text
 	 */
 	private renderCommaValue(td: HTMLElement, value: unknown): void {
-		// Get the array items (same logic as renderListValue)
-		let items: unknown[];
-		if (value instanceof Value) {
-			const str = value.toString();
-			const wikiLinks = str.match(/\[\[[^\]]+\]\]/g);
-			if (wikiLinks) {
-				items = wikiLinks;
-			} else {
-				items = str.split(',').map((s) => s.trim()).filter((s) => s);
-			}
-		} else if (isArrayLike(value)) {
-			items = toArray(value);
-		} else if (typeof value === 'string') {
-			items = splitMultiValues(value);
-		} else {
-			items = [value];
-		}
+		const items = this.getListItems(value);
 
-		// Render items inline with comma separators
 		items.forEach((item, index) => {
 			if (index > 0) {
 				td.createSpan({ text: ', ' });
 			}
 
-			if (item instanceof Value) {
-				item.renderTo(td, this.app.renderContext);
-			} else if (typeof item === 'string' && item.startsWith('[[')) {
+			if (item.startsWith('[[')) {
 				this.renderWikiLink(td, item);
 			} else {
-				td.createSpan({ text: safeValueToString(item) });
+				td.createSpan({ text: item });
 			}
+		});
+	}
+
+	/**
+	 * Setup click and hover handlers for internal links.
+	 * Centralizes the common link interaction pattern.
+	 */
+	private setupLinkHandlers(
+		link: HTMLElement,
+		container: HTMLElement,
+		linkPath: string,
+		onClick: () => void
+	): void {
+		link.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			onClick();
+		});
+
+		link.addEventListener('mouseover', (e) => {
+			this.app.workspace.trigger('hover-link', {
+				event: e,
+				source: 'bases-paginator',
+				hoverParent: container,
+				targetEl: link,
+				linktext: linkPath,
+			});
 		});
 	}
 
@@ -559,7 +503,7 @@ export class TableRenderer {
 	 */
 	private renderWikiLink(container: HTMLElement, wikilink: string): void {
 		// Extract link text from [[link]] or [[link|display]]
-		const match = wikilink.match(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/);
+		const match = wikilink.match(WIKILINK_PATTERN);
 		if (!match || !match[1]) {
 			container.createSpan({ text: wikilink });
 			return;
@@ -574,20 +518,8 @@ export class TableRenderer {
 			attr: { 'data-href': linkPath },
 		});
 
-		link.addEventListener('click', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
+		this.setupLinkHandlers(link, container, linkPath, () => {
 			void this.app.workspace.openLinkText(linkPath, '', false);
-		});
-
-		link.addEventListener('mouseover', (e) => {
-			this.app.workspace.trigger('hover-link', {
-				event: e,
-				source: 'bases-paginator',
-				hoverParent: container,
-				targetEl: link,
-				linktext: linkPath,
-			});
 		});
 	}
 

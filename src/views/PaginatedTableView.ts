@@ -8,7 +8,7 @@ import {
 } from 'obsidian';
 
 import type { SortDirection, SortState, BasesPaginatorSettings, ListRenderMode } from '../types';
-import { valueToString, isArrayLike, toArray, naturalCompare, splitMultiValues } from '../utils/helpers';
+import { valueToString, naturalCompare, isEmptyValue, extractValueItems } from '../utils/helpers';
 import { VIEW_TYPE, CSS_CLASSES, DEFAULT_PAGE_SIZE } from '../utils/constants';
 import { PaginationService } from '../services/PaginationService';
 import { FilterService } from '../services/FilterService';
@@ -363,12 +363,6 @@ export class PaginatedTableView extends BasesView {
 	private extractUniqueValues(entries: BasesEntry[], filterableColumns: BasesPropertyId[]): Map<BasesPropertyId, string[]> {
 		const result = new Map<BasesPropertyId, string[]>();
 
-		const addValue = (set: Set<string>, strVal: string) => {
-			if (strVal && strVal !== 'null') {
-				set.add(strVal);
-			}
-		};
-
 		for (const propId of filterableColumns) {
 			const uniqueValues = new Set<string>();
 
@@ -378,16 +372,10 @@ export class PaginatedTableView extends BasesView {
 					continue;
 				}
 
-				// Handle arrays and array-like objects (like tags, links)
-				if (isArrayLike(value)) {
-					for (const item of toArray(value)) {
-						addValue(uniqueValues, valueToString(item));
-					}
-				} else {
-					// Convert to string and split multi-value wikilinks if present
-					const strVal = valueToString(value);
-					for (const part of splitMultiValues(strVal)) {
-						addValue(uniqueValues, part);
+				// Use unified extractValueItems helper
+				for (const part of extractValueItems(value)) {
+					if (part && part !== 'null') {
+						uniqueValues.add(part);
 					}
 				}
 			}
@@ -482,8 +470,8 @@ export class PaginatedTableView extends BasesView {
 			const valueB = b.getValue(propId);
 
 			// Handle null/undefined/empty values - always sort to the end regardless of direction
-			const aIsEmpty = this.isEmptyValue(valueA);
-			const bIsEmpty = this.isEmptyValue(valueB);
+			const aIsEmpty = isEmptyValue(valueA);
+			const bIsEmpty = isEmptyValue(valueB);
 
 			if (aIsEmpty && bIsEmpty) return 0;
 			if (aIsEmpty) return 1; // Empty values always go to the end
@@ -492,15 +480,6 @@ export class PaginatedTableView extends BasesView {
 			const comparison = this.compareValues(valueA, valueB);
 			return direction === 'ASC' ? comparison : -comparison;
 		});
-	}
-
-	/**
-	 * Check if a value is empty (null, undefined, empty string, or "null" string)
-	 */
-	private isEmptyValue(value: unknown): boolean {
-		if (value === null || value === undefined) return true;
-		const strVal = valueToString(value);
-		return strVal === '' || strVal === 'null';
 	}
 
 	/**

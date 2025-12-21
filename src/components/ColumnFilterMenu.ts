@@ -1,4 +1,4 @@
-import { Menu, setIcon } from 'obsidian';
+import { Menu } from 'obsidian';
 import type { BasesPropertyId } from 'obsidian';
 
 /**
@@ -68,27 +68,4 @@ export class ColumnFilterMenu {
 	setSelectedValues(values: string[]): void {
 		this.selectedValues = new Set(values);
 	}
-}
-
-/**
- * Create a filter icon button for column headers
- */
-export function createFilterIcon(
-	container: HTMLElement,
-	hasActiveFilter: boolean,
-	onClick: (e: MouseEvent) => void
-): HTMLElement {
-	const filterBtn = container.createSpan({ cls: 'bp-column-filter-btn' });
-	setIcon(filterBtn, 'filter');
-
-	if (hasActiveFilter) {
-		filterBtn.addClass('bp-column-filter-active');
-	}
-
-	filterBtn.addEventListener('click', (e) => {
-		e.stopPropagation(); // Prevent sort from triggering
-		onClick(e);
-	});
-
-	return filterBtn;
 }

@@ -52,6 +52,21 @@ export const DEFAULT_SETTINGS: BasesPaginatorSettings = {
 export const CSS_PREFIX = 'bp';
 
 /**
+ * Pattern to match wikilinks: [[link]] or [[link|display]]
+ */
+export const WIKILINK_PATTERN = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/;
+
+/**
+ * Data attribute name for column index in table headers
+ * - datasetKey: used with element.dataset[key]
+ * - selector: used in CSS selectors [data-...]
+ */
+export const COLUMN_INDEX_ATTR = {
+	datasetKey: 'columnIndex',
+	selector: 'data-column-index',
+};
+
+/**
  * CSS classes used throughout the plugin
  */
 export const CSS_CLASSES = {
@@ -83,6 +98,10 @@ export const CSS_CLASSES = {
 	tableCellList: `${CSS_PREFIX}-table-cell-list`,
 	tableCellListItem: `${CSS_PREFIX}-table-cell-list-item`,
 	tableCellListBullet: `${CSS_PREFIX}-table-cell-list-bullet`,
+
+	// Column filter
+	columnFilterBtn: `${CSS_PREFIX}-column-filter-btn`,
+	columnFilterActive: `${CSS_PREFIX}-column-filter-active`,
 
 	// Column drag-to-reorder
 	tableHeaderDraggable: `${CSS_PREFIX}-table-header-draggable`,

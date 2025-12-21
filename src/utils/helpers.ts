@@ -1,3 +1,42 @@
+import { Value } from 'obsidian';
+
+/**
+ * Check if a value is empty (null, undefined, empty string, "null", empty array, or falsy Value object).
+ * This is the unified implementation used across all components.
+ */
+export function isEmptyValue(value: unknown): boolean {
+	if (value === null || value === undefined) return true;
+	if (value === '' || value === 'null') return true;
+	if (Array.isArray(value) && value.length === 0) return true;
+	if (typeof value === 'object' && value !== null) {
+		// Check for Bases Value objects with isTruthy method
+		if ('isTruthy' in value && typeof (value as { isTruthy: () => boolean }).isTruthy === 'function') {
+			if (!(value as { isTruthy: () => boolean }).isTruthy()) {
+				return true;
+			}
+		}
+		const str = valueToString(value);
+		if (str === 'null' || str === '') return true;
+	}
+	return false;
+}
+
+/**
+ * Extract values from a cell value for filtering/processing.
+ * Handles both Value objects (which may contain comma-separated values) and plain values.
+ *
+ * Note: Obsidian Bases returns list properties as single Value objects, not iterable arrays.
+ * The string representation (via toString()) is comma-separated, e.g., "[[a]], [[b]], c".
+ */
+export function extractValueItems(value: unknown): string[] {
+	if (value === null || value === undefined) return [];
+	if (value instanceof Value) {
+		return parseCommaSeparated(value.toString());
+	}
+	const str = valueToString(value);
+	return str ? [str] : [];
+}
+
 /**
  * Generate a unique ID
  */
@@ -96,49 +135,6 @@ export function containsIgnoreCase(str: string, search: string): boolean {
 }
 
 /**
- * Check if a value is array-like (array, iterable, or has numeric length with indexed elements)
- */
-export function isArrayLike(value: unknown): boolean {
-	if (value === null || value === undefined) return false;
-	if (typeof value === 'string') return false; // Strings should not be expanded
-	if (Array.isArray(value)) return true;
-
-	if (typeof value === 'object') {
-		// Check for iterable objects with Symbol.iterator
-		if (Symbol.iterator in value) return true;
-
-		// Check for array-like objects (has numeric length property and indexed elements)
-		const obj = value as Record<string, unknown>;
-		if (typeof obj.length === 'number' && obj.length >= 0 && Number.isInteger(obj.length)) {
-			return obj.length === 0 || '0' in obj;
-		}
-	}
-
-	return false;
-}
-
-/**
- * Convert an array-like value to an array. Non-array values return [value].
- */
-export function toArray(value: unknown): unknown[] {
-	if (Array.isArray(value)) return value;
-	if (!isArrayLike(value)) return [value];
-
-	// Handle iterable objects
-	if (typeof value === 'object' && value !== null && Symbol.iterator in value) {
-		return Array.from(value as Iterable<unknown>);
-	}
-
-	// Handle array-like objects with length property
-	const obj = value as Record<string, unknown>;
-	const result: unknown[] = [];
-	for (let i = 0; i < (obj.length as number); i++) {
-		result.push(obj[i]);
-	}
-	return result;
-}
-
-/**
  * Natural string comparison (handles numeric parts correctly)
  * e.g., "file2" < "file10" instead of "file10" < "file2"
  */
@@ -147,19 +143,40 @@ export function naturalCompare(a: string, b: string): number {
 }
 
 /**
- * Split a multi-value string into individual values.
- * Handles wikilink format: "[[a]], [[b]]" -> ["[[a]]", "[[b]]"]
- *
- * If the string doesn't contain multiple wikilinks, returns [str].
+ * Parse comma-separated string, respecting wikilink brackets.
+ * Handles: "[[a]], [[b]]", "a, b, c", "[[a]], b, [[c]]", "[[page, with comma]]"
  */
-export function splitMultiValues(str: string): string[] {
-	if (!str) return [str];
+export function parseCommaSeparated(str: string): string[] {
+	if (!str) return [];
 
-	// Check for wikilink format: [[...]], [[...]]
-	const wikiLinkMatches = str.match(/\[\[[^\]]+\]\]/g);
-	if (wikiLinkMatches && wikiLinkMatches.length > 1) {
-		return wikiLinkMatches;
+	const items: string[] = [];
+	let current = '';
+	let bracketDepth = 0;
+
+	for (let i = 0; i < str.length; i++) {
+		const char = str[i];
+		const nextChar = str[i + 1];
+
+		// Track [[ and ]]
+		if (char === '[' && nextChar === '[') {
+			bracketDepth++;
+			current += char;
+		} else if (char === ']' && nextChar === ']') {
+			bracketDepth--;
+			current += char;
+		} else if (char === ',' && bracketDepth === 0) {
+			// Split on comma only when not inside brackets
+			const trimmed = current.trim();
+			if (trimmed) items.push(trimmed);
+			current = '';
+		} else {
+			current += char;
+		}
 	}
 
-	return [str];
+	// Add last item
+	const trimmed = current.trim();
+	if (trimmed) items.push(trimmed);
+
+	return items;
 }

@@ -50,14 +50,6 @@ export interface PaginationState {
 }
 
 /**
- * Complete view state
- */
-export interface ViewState {
-	pagination: PaginationState;
-	filter: FilterState;
-}
-
-/**
  * Pagination bar options
  */
 export interface PaginationBarOptions {
