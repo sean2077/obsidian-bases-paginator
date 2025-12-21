@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.3.0...1.4.0) (2025-12-21)
+
+### Features
+
+* add list rendering modes and column drag-to-reorder ([2a02b3a](https://github.com/sean2077/obsidian-bases-paginator/commit/2a02b3ab31a39590b4f62009df1d175d768ea09a))
+
 ## [1.3.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.2.1...1.3.0) (2025-12-20)
 
 ### Features
