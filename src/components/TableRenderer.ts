@@ -431,8 +431,6 @@ export class TableRenderer {
 	 * Render a value as a bullet list
 	 */
 	private renderListValue(td: HTMLElement, value: unknown): void {
-		td.addClass(CSS_CLASSES.tableCellList);
-
 		const listContainer = td.createDiv({ cls: CSS_CLASSES.tableCellList });
 		const items = this.getListItems(value);
 
