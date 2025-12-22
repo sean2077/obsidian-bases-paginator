@@ -1,3 +1,9 @@
+## [1.4.2](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.1...1.4.2) (2025-12-22)
+
+### Fixes
+
+* line-by-line list rendering table layout bug ([d4ae2e4](https://github.com/sean2077/obsidian-bases-paginator/commit/d4ae2e48352e54775fd031ba4e49fa73b8eb8bad))
+
 ## [1.4.1](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.0...1.4.1) (2025-12-21)
 
 ### Fixes
