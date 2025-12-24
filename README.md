@@ -1,5 +1,25 @@
 # Bases Paginator
 
+<p align="center">
+    <a href="https://obsidian.md/"><img
+            src="https://img.shields.io/badge/Obsidian%20Plugin-1e1e1e?logo=obsidian&logoColor=white"
+            alt="Obsidian Plugin" /></a>
+    <a href="https://github.com/sean2077/obsidian-bases-paginator/releases/latest"><img
+            src="https://img.shields.io/github/v/release/sean2077/obsidian-bases-paginator"
+            alt="Latest Release" /></a>
+    <a href="https://github.com/sean2077/obsidian-bases-paginator/releases"><img
+            src="https://img.shields.io/github/downloads/sean2077/obsidian-bases-paginator/total?logo=github"
+            alt="GitHub Downloads" /></a>
+    <a href="https://github.com/sean2077/obsidian-bases-paginator/stargazers"><img
+            src="https://img.shields.io/github/stars/sean2077/obsidian-bases-paginator"
+            alt="GitHub Stars" /></a>
+    <a href="https://github.com/sean2077/obsidian-bases-paginator/actions"><img
+            src="https://img.shields.io/github/actions/workflow/status/sean2077/obsidian-bases-paginator/release.yml?branch=master"
+            alt="Build Status" /></a>
+</p>
+
+</div>
+
 A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view with column filtering to Obsidian Bases.
 
 > **Note:** Requires Obsidian v1.10.0+ with the Bases core plugin enabled.
@@ -65,15 +85,15 @@ views:
 
 ### View Options Reference
 
-| Option               | Type     | Default    | Description                                           |
-| -------------------- | -------- | ---------- | ----------------------------------------------------- |
-| `pageSize`           | string   | `"25"`     | Items per page (`"10"`, `"25"`, `"50"`, `"100"`)      |
-| `showSearchBox`      | boolean  | `true`     | Show global search input                              |
-| `filterableColumns`  | string[] | `[]`       | Columns with filter dropdowns (property IDs)          |
-| `showFilterBar`      | boolean  | `true`     | Show filter bar with search and presets               |
-| `stickyHeader`       | boolean  | `true`     | Keep table header visible when scrolling              |
-| `paginationPosition` | string   | `"top"`    | Position of pagination bar (`"top"` or `"bottom"`)    |
-| `listRenderMode`     | string   | `"comma"`  | List rendering (`"bullet"` for line-by-line, `"comma"` for comma-separated) |
+| Option               | Type     | Default   | Description                                                                 |
+| -------------------- | -------- | --------- | --------------------------------------------------------------------------- |
+| `pageSize`           | string   | `"25"`    | Items per page (`"10"`, `"25"`, `"50"`, `"100"`)                            |
+| `showSearchBox`      | boolean  | `true`    | Show global search input                                                    |
+| `filterableColumns`  | string[] | `[]`      | Columns with filter dropdowns (property IDs)                                |
+| `showFilterBar`      | boolean  | `true`    | Show filter bar with search and presets                                     |
+| `stickyHeader`       | boolean  | `true`    | Keep table header visible when scrolling                                    |
+| `paginationPosition` | string   | `"top"`   | Position of pagination bar (`"top"` or `"bottom"`)                          |
+| `listRenderMode`     | string   | `"comma"` | List rendering (`"bullet"` for line-by-line, `"comma"` for comma-separated) |
 
 ### Embedding Base Views
 
