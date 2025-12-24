@@ -42,7 +42,8 @@ export class PaginatedTableView extends BasesView {
 		direction: 'ASC',
 	};
 
-	private customColumnOrder: BasesPropertyId[] = [];
+	// Session-only column order (not persisted - Bases API doesn't expose setOrder())
+	private sessionColumnOrder: BasesPropertyId[] = [];
 
 	private initialized = false;
 
@@ -110,12 +111,6 @@ export class PaginatedTableView extends BasesView {
 
 		const presetsJson = this.getConfigValue('filterPresets', VIEW_OPTION_DEFAULTS.filterPresets);
 		this.filterService.loadPresets(presetsJson);
-
-		// Load saved column order
-		const savedOrder = this.config.get('columnOrder');
-		if (Array.isArray(savedOrder)) {
-			this.customColumnOrder = savedOrder.filter((s): s is string => typeof s === 'string' && s.length > 0) as BasesPropertyId[];
-		}
 
 		// Filter bar
 		this.filterBar = new FilterBar(
@@ -307,29 +302,32 @@ export class PaginatedTableView extends BasesView {
 	}
 
 	/**
-	 * Get visible properties with custom order applied
+	 * Get visible properties with order applied.
+	 * Priority: session order (drag-and-drop) > native Bases order > data.properties
 	 */
 	private getVisibleProperties(): BasesPropertyId[] {
-		const baseProperties = this.data.properties;
+		// Use native Bases getOrder() as the base order
+		const nativeOrder = this.config.getOrder();
+		const baseProperties = nativeOrder.length > 0 ? nativeOrder : this.data.properties;
 
-		// If no custom order, return base properties
-		if (this.customColumnOrder.length === 0) {
+		// If no session order, return base properties
+		if (this.sessionColumnOrder.length === 0) {
 			return baseProperties;
 		}
 
-		// Apply custom order, handling added/removed columns
+		// Apply session order, handling added/removed columns
 		const ordered: BasesPropertyId[] = [];
 		const remaining = new Set(baseProperties);
 
-		// First, add columns in custom order (if they still exist)
-		for (const propId of this.customColumnOrder) {
+		// First, add columns in session order (if they still exist)
+		for (const propId of this.sessionColumnOrder) {
 			if (remaining.has(propId)) {
 				ordered.push(propId);
 				remaining.delete(propId);
 			}
 		}
 
-		// Then, add any new columns not in custom order
+		// Then, add any new columns not in session order
 		for (const propId of baseProperties) {
 			if (remaining.has(propId)) {
 				ordered.push(propId);
@@ -428,7 +426,10 @@ export class PaginatedTableView extends BasesView {
 	}
 
 	/**
-	 * Handle column reorder from drag-and-drop
+	 * Handle column reorder from drag-and-drop.
+	 * Note: This only persists for the current session. The Bases API doesn't expose
+	 * a setOrder() method, so we can't persist this to the native order config.
+	 * Users can use the native properties toolbar menu for persistent column ordering.
 	 */
 	private handleColumnReorder(fromIndex: number, toIndex: number): void {
 		const properties = this.getVisibleProperties();
@@ -444,11 +445,8 @@ export class PaginatedTableView extends BasesView {
 		if (!movedItem) return;
 		newOrder.splice(toIndex, 0, movedItem);
 
-		// Update state
-		this.customColumnOrder = newOrder;
-
-		// Persist to config
-		this.config.set('columnOrder', newOrder);
+		// Update session-only order (not persisted)
+		this.sessionColumnOrder = newOrder;
 
 		// Re-render
 		this.renderData();

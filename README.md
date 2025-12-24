@@ -14,7 +14,7 @@ A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view wi
 - **Sorting**: Click column headers to sort with natural ordering (e.g., "file2" before "file10")
 - **Filter Presets**: Save, update, and delete complete view state (search, column filters, page size, current page)
 - **List Rendering**: Configurable display for multi-value properties (line-by-line with bullets or comma-separated)
-- **Column Reordering**: Drag column headers to rearrange columns (order is persisted per view)
+- **Column Reordering**: Drag column headers to rearrange columns (session-only, see Limitations)
 - **Native Rendering**: Uses Bases' native rendering for links, tags, etc.
 
 ## Limitations
@@ -23,6 +23,7 @@ This is a **read-only** custom view. Due to Bases API limitations:
 
 - Cannot edit cell values (use native Bases Table view or edit source files)
 - Cannot add/delete rows or list items
+- Column drag-and-drop reordering is **session-only** (not persisted). The Bases API doesn't expose a `setOrder()` method. For persistent column ordering, use the native **Properties** toolbar menu.
 
 ## Usage
 
@@ -39,7 +40,7 @@ This is a **read-only** custom view. Due to Bases API limitations:
    - Sticky header
    - Pagination position (top/bottom)
    - List rendering mode (line-by-line or comma-separated)
-5. Drag column headers to reorder columns
+5. Drag column headers to reorder columns (session-only), or use **Properties** toolbar for persistent ordering
 
 ### In Markdown (Base Code Block)
 
@@ -73,7 +74,6 @@ views:
 | `stickyHeader`       | boolean  | `true`     | Keep table header visible when scrolling              |
 | `paginationPosition` | string   | `"top"`    | Position of pagination bar (`"top"` or `"bottom"`)    |
 | `listRenderMode`     | string   | `"comma"`  | List rendering (`"bullet"` for line-by-line, `"comma"` for comma-separated) |
-| `columnOrder`        | string[] | `[]`       | Custom column order (auto-managed by drag-to-reorder) |
 
 ### Embedding Base Views
 

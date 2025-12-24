@@ -69,14 +69,6 @@ export function getViewOptions(): ViewOption[] {
 				'comma': 'Comma-separated',
 			},
 		} as ViewOption,
-
-		// Column order (internal, populated by drag-to-reorder)
-		{
-			type: 'multitext',
-			key: 'columnOrder',
-			displayName: 'Column order',
-			default: [],
-		} as ViewOption,
 	];
 }
 
@@ -92,5 +84,4 @@ export const VIEW_OPTION_DEFAULTS = {
 	filterPresets: '[]',
 	paginationPosition: 'top',
 	listRenderMode: 'comma',
-	columnOrder: [] as string[],
 };
