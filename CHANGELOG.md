@@ -1,3 +1,9 @@
+## [1.4.3](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.2...1.4.3) (2025-12-24)
+
+### Fixes
+
+* use native Bases order API for column ordering ([9068fe0](https://github.com/sean2077/obsidian-bases-paginator/commit/9068fe0e80ba076e456ddcaa73dd774cd648efb8))
+
 ## [1.4.2](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.1...1.4.2) (2025-12-22)
 
 ### Fixes
