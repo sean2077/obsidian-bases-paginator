@@ -30,7 +30,7 @@ export class PaginationService {
 	 * Set the page size
 	 */
 	setPageSize(size: number): void {
-		if (size <= 0) return;
+		if (!Number.isFinite(size) || size <= 0) return;
 
 		this.state.pageSize = size;
 		this.state.totalPages = calculateTotalPages(this.state.totalItems, size);

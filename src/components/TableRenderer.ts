@@ -54,6 +54,9 @@ export class TableRenderer {
 	 * Render the table
 	 */
 	private render(): void {
+		// Reset drag state — old th elements are about to be destroyed
+		this.dragState.draggingIndex = null;
+		this.dragState.dragOverIndex = null;
 		this.containerEl.empty();
 
 		if (this.entries.length === 0) {
@@ -126,8 +129,8 @@ export class TableRenderer {
 			th.addEventListener('click', (e) => {
 				// Don't sort if clicking on filter icon or during drag
 				if (this.dragState.draggingIndex !== null) return;
-				const target = e.target as HTMLElement;
-				if (!target.closest(`.${CSS_CLASSES.columnFilterBtn}`)) {
+				if (!(e.target instanceof HTMLElement)) return;
+				if (!e.target.closest(`.${CSS_CLASSES.columnFilterBtn}`)) {
 					this.handleHeaderClick(propId);
 				}
 			});
@@ -181,8 +184,8 @@ export class TableRenderer {
 
 		th.addEventListener('dragleave', (e) => {
 			// Only clear if actually leaving this element
-			const relatedTarget = e.relatedTarget as HTMLElement;
-			if (!th.contains(relatedTarget)) {
+			const relatedTarget = e.relatedTarget as HTMLElement | null;
+			if (!relatedTarget || !th.contains(relatedTarget)) {
 				th.removeClass(CSS_CLASSES.tableHeaderDragOver);
 			}
 		});
@@ -404,7 +407,11 @@ export class TableRenderer {
 
 		// Use Bases' native Value.renderTo() for rendering
 		if (value instanceof Value) {
-			value.renderTo(td, this.app.renderContext);
+			try {
+				value.renderTo(td, this.app.renderContext);
+			} catch {
+				td.setText(valueToString(value));
+			}
 		} else {
 			// Fallback for non-Value types
 			td.setText(valueToString(value));

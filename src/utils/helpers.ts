@@ -67,8 +67,10 @@ export function getPageIndices(
 	pageSize: number,
 	totalItems: number
 ): { start: number; end: number } {
-	const start = (page - 1) * pageSize;
-	const end = Math.min(start + pageSize, totalItems);
+	const safePage = Math.max(1, page);
+	const safeSize = Math.max(1, pageSize);
+	const start = (safePage - 1) * safeSize;
+	const end = Math.min(start + safeSize, totalItems);
 	return { start, end };
 }
 
@@ -162,7 +164,7 @@ export function parseCommaSeparated(str: string): string[] {
 			bracketDepth++;
 			current += char;
 		} else if (char === ']' && nextChar === ']') {
-			bracketDepth--;
+			bracketDepth = Math.max(0, bracketDepth - 1);
 			current += char;
 		} else if (char === ',' && bracketDepth === 0) {
 			// Split on comma only when not inside brackets

@@ -73,9 +73,11 @@ export class FilterService {
 	 * Remove a quick filter
 	 */
 	removeQuickFilter(propertyId: BasesPropertyId, value: string): void {
+		const before = this.state.quickFilters.length;
 		this.state.quickFilters = this.state.quickFilters.filter(
 			(f) => !(f.propertyId === propertyId && f.value === value)
 		);
+		if (this.state.quickFilters.length === before) return; // nothing removed
 		this.state.activePresetId = null;
 		this.onChange();
 	}
@@ -248,6 +250,7 @@ export class FilterService {
 		this.presets = this.presets.filter((p) => p.id !== presetId);
 		if (this.state.activePresetId === presetId) {
 			this.state.activePresetId = null;
+			this.onChange();
 		}
 	}
 
@@ -274,6 +277,14 @@ export class FilterService {
 
 		const lowerQuery = this.state.searchQuery.toLowerCase();
 
+		// Build column filter Sets once, outside the per-entry loop
+		const columnFilterSets = new Map<BasesPropertyId, Set<string>>();
+		for (const [propId, values] of this.columnFilters) {
+			if (values.length > 0) {
+				columnFilterSets.set(propId, new Set(values));
+			}
+		}
+
 		return entries.filter((entry) => {
 			// Check search query
 			if (lowerQuery && !this.matchesSearch(entry, lowerQuery)) {
@@ -288,7 +299,7 @@ export class FilterService {
 			}
 
 			// Check column filters
-			return this.matchesColumnFilters(entry);
+			return this.matchesColumnFilters(entry, columnFilterSets);
 		});
 	}
 
@@ -330,19 +341,12 @@ export class FilterService {
 	/**
 	 * Check if entry matches all column filters (AND between columns, OR within column)
 	 */
-	private matchesColumnFilters(entry: BasesEntry): boolean {
-		for (const [propId, selectedValues] of this.columnFilters) {
-			if (selectedValues.length === 0) continue;
-
+	private matchesColumnFilters(entry: BasesEntry, columnFilterSets: Map<BasesPropertyId, Set<string>>): boolean {
+		for (const [propId, selectedSet] of columnFilterSets) {
 			const value = entry.getValue(propId);
 			const entryValues = this.extractAllValues(value);
 
-			// At least one selected value must match (OR within column)
-			const hasMatch = selectedValues.some((selectedVal) =>
-				entryValues.some((entryVal) => entryVal === selectedVal)
-			);
-
-			if (!hasMatch) {
+			if (!entryValues.some((entryVal) => selectedSet.has(entryVal))) {
 				return false;
 			}
 		}

@@ -151,12 +151,9 @@ export class FilterBar {
 		});
 
 		this.savePresetInput.addEventListener('blur', () => {
-			// Small delay to allow click events to fire first
-			setTimeout(() => {
-				if (this.savePresetInput) {
-					handleSave();
-				}
-			}, 100);
+			// Only clean up on blur — save requires explicit Enter
+			this.savePresetInput?.remove();
+			this.savePresetInput = null;
 		});
 	}
 

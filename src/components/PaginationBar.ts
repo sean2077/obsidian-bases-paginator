@@ -145,19 +145,18 @@ export class PaginationBar {
 			attr: { min: '1', max: '1000' },
 		});
 
-		this.customPageSizeInput.addEventListener('change', () => {
+		const applyCustomSize = (): void => {
 			const size = parseInt(this.customPageSizeInput!.value, 10);
 			if (!isNaN(size) && size > 0) {
-				this.onPageSizeChange(size);
+				this.onPageSizeChange(Math.min(size, 1000));
 			}
-		});
+		};
+
+		this.customPageSizeInput.addEventListener('change', applyCustomSize);
 
 		this.customPageSizeInput.addEventListener('keydown', (e) => {
 			if (e.key === 'Enter') {
-				const size = parseInt(this.customPageSizeInput!.value, 10);
-				if (!isNaN(size) && size > 0) {
-					this.onPageSizeChange(size);
-				}
+				applyCustomSize();
 			}
 		});
 
@@ -193,9 +192,13 @@ export class PaginationBar {
 		this.pageInfo.setText(`Page ${this.currentPage} of ${this.totalPages}`);
 
 		// Update item info
-		const start = this.totalItems > 0 ? (this.currentPage - 1) * this.pageSize + 1 : 0;
-		const end = Math.min(this.currentPage * this.pageSize, this.totalItems);
-		this.itemInfo.setText(`Showing ${start}-${end} of ${this.totalItems}`);
+		if (this.totalItems === 0) {
+			this.itemInfo.setText('No items');
+		} else {
+			const start = (this.currentPage - 1) * this.pageSize + 1;
+			const end = Math.min(this.currentPage * this.pageSize, this.totalItems);
+			this.itemInfo.setText(`Showing ${start}-${end} of ${this.totalItems}`);
+		}
 
 		// Update button states
 		const canGoPrev = this.currentPage > 1;
@@ -210,13 +213,7 @@ export class PaginationBar {
 		this.next10Btn.disabled = !canGoNext10;
 		this.lastBtn.disabled = !canGoNext;
 
-		// Update disabled class
-		this.firstBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoPrev);
-		this.prev10Btn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoPrev10);
-		this.prevBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoPrev);
-		this.nextBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoNext);
-		this.next10Btn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoNext10);
-		this.lastBtn.toggleClass(CSS_CLASSES.paginationBtnDisabled, !canGoNext);
+		// Button :disabled pseudo-class is used for styling (see styles.css)
 	}
 
 	/**

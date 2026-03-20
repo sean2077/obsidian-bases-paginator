@@ -1,4 +1,4 @@
-import { debounce } from 'obsidian';
+import { debounce, type Debouncer } from 'obsidian';
 import type { SearchBoxOptions } from '../types';
 import { CSS_CLASSES, SEARCH_DEBOUNCE_MS } from '../utils/constants';
 
@@ -9,12 +9,13 @@ export class SearchBox {
 	private containerEl: HTMLElement;
 	private inputEl: HTMLInputElement;
 	private onSearch: (query: string) => void;
+	private debouncedSearch: Debouncer<[string], void>;
 
 	constructor(containerEl: HTMLElement, options: SearchBoxOptions) {
 		this.containerEl = containerEl;
 		this.onSearch = options.onSearch;
 
-		const debouncedSearch = debounce((query: string) => {
+		this.debouncedSearch = debounce((query: string) => {
 			this.onSearch(query);
 		}, options.debounceMs ?? SEARCH_DEBOUNCE_MS);
 
@@ -27,12 +28,13 @@ export class SearchBox {
 		});
 
 		this.inputEl.addEventListener('input', () => {
-			debouncedSearch(this.inputEl.value);
+			this.debouncedSearch(this.inputEl.value);
 		});
 
-		// Clear on Escape
+		// Clear on Escape — cancel any pending debounced search first
 		this.inputEl.addEventListener('keydown', (e) => {
 			if (e.key === 'Escape') {
+				this.debouncedSearch.cancel?.();
 				this.clear();
 				this.onSearch('');
 			}

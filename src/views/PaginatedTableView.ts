@@ -47,6 +47,13 @@ export class PaginatedTableView extends BasesView {
 
 	private initialized = false;
 
+	// Caches for performance
+	private lastPaginationPosition: string = '';
+	private dataVersion: number = 0;
+	private cachedUniqueValues: Map<BasesPropertyId, string[]> | null = null;
+	private cachedUniqueValuesVersion: number = -1;
+	private cachedUniqueValuesColumns: BasesPropertyId[] | null = null;
+
 	constructor(app: App, controller: QueryController, containerEl: HTMLElement, getSettings: () => BasesPaginatorSettings) {
 		super(controller);
 		this._app = app;
@@ -78,6 +85,10 @@ export class PaginatedTableView extends BasesView {
 	 */
 	private updateLayout(): void {
 		const position = this.getConfigValue('paginationPosition', VIEW_OPTION_DEFAULTS.paginationPosition);
+
+		// Skip if position hasn't changed
+		if (position === this.lastPaginationPosition) return;
+		this.lastPaginationPosition = position;
 
 		// Use CSS classes for order to control layout
 		// Filter bar always first
@@ -217,6 +228,9 @@ export class PaginatedTableView extends BasesView {
 			this.initializeComponents();
 		}
 
+		// Bump data version for cache invalidation
+		this.dataVersion++;
+
 		// Update layout (in case config changed)
 		this.updateLayout();
 
@@ -346,19 +360,36 @@ export class PaginatedTableView extends BasesView {
 		if (!value) return [];
 
 		// Handle both string[] (multitext) and string (legacy) formats
+		let columns: BasesPropertyId[];
 		if (Array.isArray(value)) {
-			return value.filter((s): s is string => typeof s === 'string' && s.length > 0) as BasesPropertyId[];
+			columns = value.filter((s): s is string => typeof s === 'string' && s.length > 0) as BasesPropertyId[];
+		} else if (typeof value === 'string' && value !== '') {
+			columns = value.split(',').map((s) => s.trim()).filter((s) => s.length > 0) as BasesPropertyId[];
+		} else {
+			return [];
 		}
-		if (typeof value === 'string' && value !== '') {
-			return value.split(',').map((s) => s.trim()).filter((s) => s.length > 0) as BasesPropertyId[];
-		}
-		return [];
+
+		// Validate against current data properties to exclude stale column IDs
+		if (!this.data?.properties) return columns;
+		const validProperties = new Set(this.data.properties);
+		return columns.filter((col) => validProperties.has(col));
 	}
 
 	/**
 	 * Extract unique values for each filterable column
 	 */
 	private extractUniqueValues(entries: BasesEntry[], filterableColumns: BasesPropertyId[]): Map<BasesPropertyId, string[]> {
+		// Return cached result if data version and columns haven't changed
+		if (
+			this.cachedUniqueValues &&
+			this.cachedUniqueValuesVersion === this.dataVersion &&
+			this.cachedUniqueValuesColumns !== null &&
+			this.cachedUniqueValuesColumns.length === filterableColumns.length &&
+			this.cachedUniqueValuesColumns.every((col, i) => col === filterableColumns[i])
+		) {
+			return this.cachedUniqueValues;
+		}
+
 		const result = new Map<BasesPropertyId, string[]>();
 
 		for (const propId of filterableColumns) {
@@ -381,6 +412,11 @@ export class PaginatedTableView extends BasesView {
 			// Sort values using natural sort
 			result.set(propId, Array.from(uniqueValues).sort(naturalCompare));
 		}
+
+		// Cache the result
+		this.cachedUniqueValues = result;
+		this.cachedUniqueValuesVersion = this.dataVersion;
+		this.cachedUniqueValuesColumns = [...filterableColumns];
 
 		return result;
 	}
