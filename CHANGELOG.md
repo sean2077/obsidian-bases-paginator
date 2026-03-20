@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.3...1.5.0) (2026-03-20)
+
+### Features
+
+* bug fixes and perf improvements ([6fb1211](https://github.com/sean2077/obsidian-bases-paginator/commit/6fb1211cc828413358000f2ae6eedb59e44ef247))
+
 ## [1.4.3](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.2...1.4.3) (2025-12-24)
 
 ### Fixes
