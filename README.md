@@ -128,6 +128,8 @@ This will render the "My Tasks" view (if it's a paginated-table type) inline in 
 
 ## Development
 
+See the [development guide](./docs/development.md) for architecture, contributor constraints, manual verification, and release details.
+
 ```bash
 # Install dependencies
 npm install

@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc 'root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || exit 0; bash \"$root/.agents/tools/hooks/trunk_edit_guard.sh\"'",
+            "statusMessage": "Checking worktree policy"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc 'root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || exit 0; bash \"$root/.agents/tools/hooks/authority_doc_budget.sh\"'",
+            "statusMessage": "Checking AGENTS.md budget"
+          }
+        ]
+      }
+    ]
+  }
+}

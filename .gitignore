@@ -22,6 +22,7 @@ data.json
 .DS_Store
 
 
-.claude
-CLAUDE.md
 GEMINI.md
+.claude/settings.local.json
+.worktrees/
+.claude/allow-trunk-edit

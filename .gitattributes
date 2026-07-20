@@ -1,0 +1,6 @@
+.agents/tools/*.sh text eol=lf
+.agents/tools/hooks/*.sh text eol=lf
+.agents/tools/*.py text eol=lf
+.agents/tools/hooks/*.py text eol=lf
+.agents/relink-skills.sh text eol=lf
+.agents/*.py text eol=lf
