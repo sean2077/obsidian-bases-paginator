@@ -12,6 +12,9 @@ on:
 
 permissions:
     contents: write
+    id-token: write
+    attestations: write
+    artifact-metadata: write
 
 jobs:
     release:
@@ -45,3 +48,12 @@ jobs:
                       conventional-changelog-conventionalcommits
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Attest release assets
+              if: steps.semantic.outputs.new_release_published == 'true'
+              uses: actions/attest@v4
+              with:
+                  subject-path: |
+                      main.js
+                      manifest.json
+                      styles.css

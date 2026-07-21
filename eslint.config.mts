@@ -43,6 +43,7 @@ export default tseslint.config(
 	},
 	globalIgnores([
 		".oma",
+		".worktrees",
 		"node_modules",
 		"dist",
 		"esbuild.config.mjs",

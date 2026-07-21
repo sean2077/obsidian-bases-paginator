@@ -125,6 +125,7 @@ Semantic Release runs after the Node.js build workflow succeeds on `main` or `ma
 - `.releaserc.yml` synchronizes `manifest.json`, `package.json`, `package-lock.json`, `src/version.ts`, and `versions.json`.
 - Tags have no leading `v`.
 - GitHub release assets are `main.js`, `manifest.json`, and `styles.css`.
+- Successful releases generate SLSA provenance attestations for all three assets.
 - Never commit the generated bundle or manually change published identifiers.
 
 Do not manually reproduce only part of the release flow. If release automation changes, update the workflow, `.releaserc.yml`, and this section together.
