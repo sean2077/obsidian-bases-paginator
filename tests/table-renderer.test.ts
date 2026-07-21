@@ -183,13 +183,57 @@ describe("TableRenderer native value rendering", () => {
 
 		renderer.update([{ entries: [entry], showHeader: false }] as never, ["note.value"]);
 		expect(container.querySelector("tbody tr")).toBe(firstRow);
-		expect((secondRow as HTMLElement).style.display).toBe("none");
+		expect(secondRow?.isConnected).toBe(false);
 
 		renderer.update([], ["note.value"]);
-		expect((firstRow as HTMLElement).style.display).toBe("none");
+		expect(firstRow?.isConnected).toBe(false);
 		renderer.update([{ entries: [entry], showHeader: false }] as never, ["note.value"]);
+		expect(container.querySelector("tbody tr")).not.toBe(firstRow);
+	});
+
+	it("releases peak-only rows and links when a large page shrinks", () => {
+		const container = document.body.createDiv();
+		const renderer = new TableRenderer(createApp(), container, createDisplayName(), {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: false,
+		});
+		const entries = Array.from({ length: 1_000 }, (_, index) => ({
+			file: { name: `Entry ${index}`, path: `Entry ${index}.md` },
+			getValue: () => ({ renderTo: vi.fn(), toString: () => `Entry ${index}` }),
+		}));
+
+		renderer.update([{ entries, showHeader: false }] as never, ["file.name"]);
+		const firstRow = container.querySelector("tbody tr");
+		expect(container.querySelectorAll("tbody tr")).toHaveLength(1_000);
+		expect(container.querySelectorAll("tbody a")).toHaveLength(1_000);
+
+		renderer.update([{ entries: entries.slice(0, 10), showHeader: false }] as never, ["file.name"]);
+
 		expect(container.querySelector("tbody tr")).toBe(firstRow);
-		expect((firstRow as HTMLElement).style.display).toBe("");
+		expect(container.querySelectorAll("tbody tr")).toHaveLength(10);
+		expect(container.querySelectorAll("tbody a")).toHaveLength(10);
+	});
+
+	it("does not retain stale rows or links across repeated peak cycles", () => {
+		const container = document.body.createDiv();
+		const renderer = new TableRenderer(createApp(), container, createDisplayName(), {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: false,
+		});
+		const entries = Array.from({ length: 1_000 }, (_, index) => ({
+			file: { name: `Entry ${index}`, path: `Entry ${index}.md` },
+			getValue: () => ({ renderTo: vi.fn(), toString: () => `Entry ${index}` }),
+		}));
+
+		for (const size of [1_000, 10, 500, 1, 1_000, 10]) {
+			renderer.update([{ entries: entries.slice(0, size), showHeader: false }] as never, ["file.name"]);
+			const links = [...container.querySelectorAll("tbody a")];
+			expect(container.querySelectorAll("tbody tr")).toHaveLength(size);
+			expect(links).toHaveLength(size);
+			expect(links.at(-1)?.getAttribute("data-href")).toBe(`Entry ${size - 1}.md`);
+		}
 	});
 });
 

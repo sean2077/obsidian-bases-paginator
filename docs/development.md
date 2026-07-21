@@ -11,6 +11,7 @@ CI verifies current Node.js 20 and 22 releases. Use npm and the checked-in lockf
 | Clean dependency install | `npm ci` | Required before final verification. |
 | Intentional dependency change | `npm install` | Review the matching lockfile diff and audit output. |
 | Automated tests | `npm test` | Runs service, compatibility, rendering, and DOM interaction tests. |
+| Obsidian host smoke | `npm run test:host -- --vault <test-vault> --base <fixture.base> --embed <fixture.md>` | Builds, deploys, and verifies the plugin in a running disposable vault through Obsidian CLI/CDP. |
 | Test watch mode | `npm run test:watch` | Local iteration only. |
 | Formatting check | `npm run fmt:check` | Covers source, tests, and root JSON/config files. |
 | Lint | `npm run lint` | Applies Obsidian and TypeScript rules. |
@@ -41,13 +42,12 @@ Recheck the [Obsidian changelog](https://obsidian.md/changelog/), [Bases view he
 | Path | Responsibility |
 |---|---|
 | `src/main.ts` | Plugin lifecycle, Bases registration, settings persistence, and settings-tab registration. |
-| `src/views/PaginatedTableView.ts` | Coordinates native grouped results, page state, layout, and components. |
+| `src/views/PaginatedTableView.ts` | Adapts native grouped results and coordinates layout and rendering. |
 | `src/views/viewOptions.ts` | Exposes only pagination-specific per-view options. |
-| `src/services/PaginationService.ts` | Owns page bounds and state without rendering callbacks. |
-| `src/services/GroupedPaginationService.ts` | Produces a bounded global page while preserving group boundaries. |
+| `src/services/Paginator.ts` | Returns page state and a bounded group-preserving slice through one interface. |
 | `src/services/SettingsService.ts` | Validates plugin `data.json`, including the legacy shape. |
 | `src/services/ViewSettingsService.ts` | Validates current view values and harmlessly ignores legacy keys. |
-| `src/components/TableRenderer.ts` | Reuses table DOM and delegates each non-file value to `Value.renderTo`. |
+| `src/components/TableRenderer.ts` | Reuses current-page DOM, trims peak-only rows, and delegates each non-file value to `Value.renderTo`. |
 | `src/components/PaginationBar.ts` | Owns accessible page and page-size controls. |
 | `src/utils/` and `src/types.ts` | Stable identifiers, CSS names, small value/page helpers, and shared contracts. |
 
@@ -71,9 +71,9 @@ npm test
 npm run build
 ```
 
-Tests use Vitest and jsdom with a narrow Obsidian API double. They cover pure page/group transformations, malformed and legacy settings, false/zero value handling, native value-render delegation, modifier-aware file links, reusable DOM rows, accessible control names, keyboard page-size input, and a 10,000-entry bounded-page case.
+Tests use Vitest and jsdom with a narrow Obsidian API double. They cover the paginator interface, malformed and legacy settings, false/zero value handling, native value-render delegation, modifier-aware file links, bounded reusable DOM rows, accessible control names, keyboard page-size input, and a 10,000-entry bounded-page case.
 
-The test double does not prove Obsidian lifecycle behavior, CSS layout, native rendering implementations, hover popovers, or mobile WebView behavior. Those remain manual gates.
+The test double does not prove Obsidian lifecycle behavior, CSS layout, native rendering implementations, hover popovers, or mobile WebView behavior. Use the CLI-first host gate below for the real renderer, then perform only its named residual manual checks.
 
 After dependency changes, also run:
 
@@ -84,9 +84,19 @@ npm outdated
 
 Major-version differences in `npm outdated` are not automatic upgrade instructions. Keep the toolchain on versions supported together by the current Obsidian sample/plugin guidance and CI Node matrix.
 
-## Manual Obsidian test-vault gate
+## Obsidian CLI test-vault gate
 
-Never develop or run these checks in a primary vault. Use an independent disposable test vault with Bases enabled, then copy `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/bases-paginator/`.
+Never develop or run these checks in a primary vault. Use an independent disposable test vault whose name contains `test`, `qa`, `sandbox`, or `disposable`, with Bases enabled and a fixture that renders at least two pages. Obsidian 1.12.7 or newer must be running with its CLI enabled.
+
+Run the repeatable host smoke first:
+
+```bash
+npm run test:host -- --vault obsidian-test-vault --base "Paginator QA.base" --embed "Dashboard.md"
+```
+
+The command builds and copies `main.js`, `manifest.json`, and `styles.css` into the named vault's plugin directory, reloads the plugin twice, opens the direct and embedded fixtures, navigates through CDP mouse input, checks the accessibility tree and error buffers, captures desktop and 390×844 mobile screenshots under `.oma/obsidian-host-test/`, and verifies that `.md`, `.base`, and `.canvas` hashes did not change. It intentionally stays out of GitHub Actions because it requires a running desktop Obsidian instance.
+
+Prefer `dev:dom`, `eval`, `dev:cdp`, `dev:errors`, `dev:console`, and `dev:screenshot` for the remaining matrix. Computer Use is a fallback only for OS-level dialogs or window chrome. Real screen-reader speech, OS focus behavior, hover timing outside the renderer, and physical iOS/Android behavior remain manual.
 
 Required matrix for user-visible or data-flow changes:
 
@@ -101,7 +111,7 @@ Required matrix for user-visible or data-flow changes:
 9. Test keyboard-only navigation, focus visibility, screen-reader names/status, light/dark themes, a narrow desktop pane, and an iOS or Android device/emulator.
 10. Compare test-vault note/frontmatter contents before and after the run; only plugin settings or explicitly changed view pagination options may differ.
 
-Record the Obsidian version/channel, platform, vault fixture, observed result, and any console warning. Do not claim this gate from automated tests alone.
+Record the Obsidian version/channel, platform, vault fixture, host-smoke JSON summary, residual observations, and any console warning. Do not claim the full gate from Vitest or the host smoke alone when the change touches a residual manual boundary.
 
 ## Release flow
 

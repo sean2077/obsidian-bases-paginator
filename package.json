@@ -8,11 +8,12 @@
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc --noEmit && node esbuild.config.mjs production",
 		"test": "vitest run",
+		"test:host": "node .agents/skills/obsidian-host-test/scripts/verify-host.mjs",
 		"test:watch": "vitest",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"fmt": "prettier --write \"{src,tests}/**/*.ts\" \"*.{json,mts}\"",
-		"fmt:check": "prettier --check \"{src,tests}/**/*.ts\" \"*.{json,mts}\""
+		"fmt": "prettier --write \"{src,tests}/**/*.ts\" \".agents/skills/**/*.mjs\" \"*.{json,mts}\"",
+		"fmt:check": "prettier --check \"{src,tests}/**/*.ts\" \".agents/skills/**/*.mjs\" \"*.{json,mts}\""
 	},
 	"keywords": [],
 	"author": "sean2077",

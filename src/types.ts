@@ -1,11 +1,3 @@
-/** Pagination state for the current view instance. */
-export interface PaginationState {
-	currentPage: number;
-	pageSize: number;
-	totalItems: number;
-	totalPages: number;
-}
-
 export interface PaginationBarOptions {
 	onPageChange: (page: number) => void;
 	onPageSizeChange: (size: number) => void;

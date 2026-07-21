@@ -1,8 +1,8 @@
 import { setIcon } from "obsidian";
+import type { PaginationState } from "../services/Paginator";
 import type { PaginationBarOptions } from "../types";
 import { CSS_CLASSES, PAGE_SIZE_OPTIONS } from "../utils/constants";
-
-const MAX_PAGE_SIZE = 1000;
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE, isValidPageSize } from "../utils/pageSize";
 
 export class PaginationBar {
 	private readonly firstButton: HTMLButtonElement;
@@ -17,7 +17,7 @@ export class PaginationBar {
 	private currentPage = 1;
 	private totalPages = 1;
 	private totalItems = 0;
-	private pageSize = 25;
+	private pageSize = DEFAULT_PAGE_SIZE;
 
 	constructor(
 		containerEl: HTMLElement,
@@ -46,14 +46,14 @@ export class PaginationBar {
 				"aria-label": "Custom items per page",
 				inputmode: "numeric",
 				max: String(MAX_PAGE_SIZE),
-				min: "1",
+				min: String(MIN_PAGE_SIZE),
 				step: "1",
 			},
 		});
 		this.customPageSizeInput.hidden = true;
 		this.customPageSizeError = sizeLabel.createSpan({
 			cls: CSS_CLASSES.customPageSizeError,
-			text: "Enter 1–1,000.",
+			text: `Enter ${MIN_PAGE_SIZE}–${MAX_PAGE_SIZE.toLocaleString("en-US")}.`,
 			attr: { role: "alert" },
 		});
 		this.customPageSizeError.hidden = true;
@@ -81,11 +81,11 @@ export class PaginationBar {
 		this.render();
 	}
 
-	update(currentPage: number, totalPages: number, totalItems: number, pageSize: number): void {
-		this.currentPage = currentPage;
-		this.totalPages = totalPages;
-		this.totalItems = totalItems;
-		this.pageSize = pageSize;
+	update(state: PaginationState): void {
+		this.currentPage = state.currentPage;
+		this.totalPages = state.totalPages;
+		this.totalItems = state.totalItems;
+		this.pageSize = state.pageSize;
 		this.syncPageSizeControls();
 		this.render();
 	}
@@ -121,8 +121,7 @@ export class PaginationBar {
 
 	private applyCustomPageSize(): void {
 		const size = Number(this.customPageSizeInput.value);
-		const valid = Number.isInteger(size) && size >= 1 && size <= MAX_PAGE_SIZE;
-		if (!valid) {
+		if (!isValidPageSize(size)) {
 			this.customPageSizeInput.setAttribute("aria-invalid", "true");
 			this.customPageSizeError.hidden = false;
 			return;

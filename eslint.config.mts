@@ -11,7 +11,7 @@ export default tseslint.config(
 			},
 			parserOptions: {
 				projectService: {
-					allowDefaultProject: ["manifest.json"],
+					allowDefaultProject: ["manifest.json", ".agents/skills/obsidian-host-test/scripts/verify-host.mjs"],
 				},
 				tsconfigRootDir: import.meta.dirname,
 				extraFileExtensions: [".json"],
@@ -25,6 +25,15 @@ export default tseslint.config(
 			"obsidianmd/no-nodejs-modules": "off",
 			"obsidianmd/no-static-styles-assignment": "off",
 			"obsidianmd/prefer-create-el": "off",
+		},
+	},
+	{
+		files: [".agents/skills/**/*.mjs"],
+		languageOptions: { globals: { ...globals.node } },
+		rules: {
+			"obsidianmd/no-nodejs-modules": "off",
+			"obsidianmd/prefer-window-timers": "off",
+			"obsidianmd/rule-custom-message": "off",
 		},
 	},
 	{

@@ -1,12 +1,11 @@
 import type { BasesPaginatorSettings, PageSizeOption } from "../types";
+import { DEFAULT_PAGE_SIZE } from "./pageSize";
 
 /** Stable external identifier used in .base files. */
 export const VIEW_TYPE = "paginated-table";
 
 export const VIEW_NAME = "Paginated table";
 export const VIEW_ICON = "table-2";
-export const DEFAULT_PAGE_SIZE = 25;
-
 export const PAGE_SIZE_OPTIONS: PageSizeOption[] = [
 	{ value: 10, label: "10" },
 	{ value: 25, label: "25" },
