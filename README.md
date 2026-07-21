@@ -9,6 +9,7 @@
 Bases Paginator is a local, read-only Obsidian view that adds real page navigation to [Bases](https://help.obsidian.md/bases). It stays deliberately small and composes with native Bases instead of replacing its query controls.
 
 Requires Obsidian 1.12.0 or later with the Bases core plugin enabled. Desktop and mobile are supported.
+On Obsidian 1.13.0 or later, the plugin's pagination settings also appear in Settings search.
 
 ## Why this plugin still exists
 
