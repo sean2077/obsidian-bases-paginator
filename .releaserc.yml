@@ -20,8 +20,9 @@ plugins:
       - prepareCmd: |
             sed -i 's/"version": "[^"]*"/"version": "${nextRelease.version}"/' manifest.json
             sed -i 's/export const VERSION = ".*"/export const VERSION = "${nextRelease.version}"/' src/version.ts
-            node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.json')); const v=JSON.parse(fs.readFileSync('versions.json')); v['${nextRelease.version}']=m.minAppVersion; fs.writeFileSync('versions.json', JSON.stringify(v, null, '\t'));"
+            node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('manifest.json')); const v=JSON.parse(fs.readFileSync('versions.json')); v['${nextRelease.version}']=m.minAppVersion; fs.writeFileSync('versions.json', JSON.stringify(v, null, '\t') + '\n');"
             npm version ${nextRelease.version} --no-git-tag-version
+            npm run fmt:check
             npm run build
     - - "@semantic-release/git"
       - assets:
