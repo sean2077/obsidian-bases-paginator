@@ -1,3 +1,9 @@
+## [2.0.2](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.1...2.0.2) (2026-07-21)
+
+### Fixes
+
+* **release:** restore generated release notes ([e74dfbe](https://github.com/sean2077/obsidian-bases-paginator/commit/e74dfbe0e8dda615fe67a5607bca4e24eb582a1a))
+
 ## [2.0.1](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.0...2.0.1) (2026-07-21)
 
 ### Fixes
