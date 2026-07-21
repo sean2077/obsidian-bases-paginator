@@ -11,7 +11,11 @@ export default tseslint.config(
 			},
 			parserOptions: {
 				projectService: {
-					allowDefaultProject: ["manifest.json", ".agents/skills/obsidian-host-test/scripts/*.mjs"],
+					allowDefaultProject: [
+						"manifest.json",
+						".agents/skills/obsidian-host-test/scripts/*.mjs",
+						"scripts/release/*.mjs",
+					],
 				},
 				tsconfigRootDir: import.meta.dirname,
 				extraFileExtensions: [".json"],
@@ -21,6 +25,7 @@ export default tseslint.config(
 	...obsidianmd.configs.recommended,
 	{
 		files: ["tests/**/*.ts", "vitest.config.ts"],
+		languageOptions: { globals: { ...globals.node } },
 		rules: {
 			"obsidianmd/no-nodejs-modules": "off",
 			"obsidianmd/no-static-styles-assignment": "off",
@@ -28,7 +33,7 @@ export default tseslint.config(
 		},
 	},
 	{
-		files: [".agents/skills/**/*.{mjs,mts}"],
+		files: [".agents/skills/**/*.{mjs,mts}", "scripts/release/*.mjs"],
 		languageOptions: { globals: { ...globals.node } },
 		rules: {
 			"obsidianmd/no-nodejs-modules": "off",

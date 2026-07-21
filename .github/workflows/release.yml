@@ -1,14 +1,9 @@
 name: Release
 
 on:
-    workflow_run:
-        workflows: ["Node.js build"]
-        types:
-            - completed
-        branches:
-            - main
-            - master
-    workflow_dispatch:
+    push:
+        tags:
+            - "[0-9]*.[0-9]*.[0-9]*"
 
 permissions:
     contents: write
@@ -16,45 +11,92 @@ permissions:
     attestations: write
     artifact-metadata: write
 
+concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
+
 jobs:
     release:
         runs-on: ubuntu-latest
-        # Only run if the triggering workflow succeeded
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
         steps:
             - name: Checkout repository
               uses: actions/checkout@v7
               with:
-                  fetch-depth: 0 # semantic-release needs full git history
+                  fetch-depth: 0
 
             - name: Setup Node.js
               uses: actions/setup-node@v7
               with:
-                  node-version: "lts/*"
+                  node-version: 22.x
                   cache: "npm"
+
+            - name: Verify release snapshot and extract notes
+              env:
+                  TAG_NAME: ${{ github.ref_name }}
+              run: |
+                  git fetch origin master --no-tags
+                  release_commit="$(git rev-parse "refs/tags/${TAG_NAME}^{commit}")"
+                  git merge-base --is-ancestor "$release_commit" origin/master
+                  node scripts/release/verify.mjs "$TAG_NAME" --require-tag --notes-output "$RUNNER_TEMP/release-notes.md"
 
             - name: Install dependencies
               run: npm ci
 
-            - name: Semantic Release
-              uses: cycjimmy/semantic-release-action@v6
-              id: semantic
-              # v10 currently produces empty notes with semantic-release's v14 notes generator.
-              with:
-                  extra_plugins: |
-                      @semantic-release/changelog
-                      @semantic-release/git
-                      @semantic-release/exec
-                      conventional-changelog-conventionalcommits@9.3.1
+            - name: Check formatting
+              run: npm run fmt:check
+
+            - name: Lint
+              run: npm run lint
+
+            - name: Test
+              run: npm test
+
+            - name: Build release assets
+              run: npm run build
+
+            - name: Create or repair GitHub Release
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GH_TOKEN: ${{ github.token }}
+                  TAG_NAME: ${{ github.ref_name }}
+              run: |
+                  is_prerelease=false
+                  if [[ "$TAG_NAME" == *-* ]]; then
+                      is_prerelease=true
+                  fi
+
+                  if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+                      gh release edit "$TAG_NAME" --title "$TAG_NAME" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease="$is_prerelease"
+                      gh release upload "$TAG_NAME" main.js manifest.json styles.css --clobber
+                      gh release edit "$TAG_NAME" --draft=false
+                  else
+                      gh release create "$TAG_NAME" main.js manifest.json styles.css --verify-tag --title "$TAG_NAME" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease="$is_prerelease"
+                  fi
 
             - name: Attest release assets
-              if: steps.semantic.outputs.new_release_published == 'true'
               uses: actions/attest@v4
               with:
                   subject-path: |
                       main.js
                       manifest.json
                       styles.css
+
+            - name: Verify published release
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  TAG_NAME: ${{ github.ref_name }}
+              run: |
+                  expected_prerelease=false
+                  if [[ "$TAG_NAME" == *-* ]]; then
+                      expected_prerelease=true
+                  fi
+                  test "$(gh release view "$TAG_NAME" --json tagName --jq .tagName)" = "$TAG_NAME"
+                  test "$(gh release view "$TAG_NAME" --json isDraft --jq .isDraft)" = "false"
+                  test "$(gh release view "$TAG_NAME" --json isPrerelease --jq .isPrerelease)" = "$expected_prerelease"
+                  gh release view "$TAG_NAME" --json body --jq .body > "$RUNNER_TEMP/published-notes.md"
+                  diff -u "$RUNNER_TEMP/release-notes.md" "$RUNNER_TEMP/published-notes.md"
+                  published_assets="$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name')"
+                  for asset in main.js manifest.json styles.css; do
+                      grep -Fx "$asset" <<<"$published_assets"
+                  done
+                  gh release view "$TAG_NAME" --json url --jq .url >> "$GITHUB_STEP_SUMMARY"

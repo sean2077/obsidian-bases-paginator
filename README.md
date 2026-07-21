@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://obsidian.md/"><img src="https://img.shields.io/badge/Obsidian%20Plugin-1e1e1e?logo=obsidian&logoColor=white" alt="Obsidian plugin" /></a>
   <a href="https://github.com/sean2077/obsidian-bases-paginator/releases/latest"><img src="https://img.shields.io/github/v/release/sean2077/obsidian-bases-paginator" alt="Latest release" /></a>
-  <a href="https://github.com/sean2077/obsidian-bases-paginator/actions"><img src="https://img.shields.io/github/actions/workflow/status/sean2077/obsidian-bases-paginator/release.yml?branch=master" alt="Build status" /></a>
+  <a href="https://github.com/sean2077/obsidian-bases-paginator/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/sean2077/obsidian-bases-paginator/release.yml" alt="Release status" /></a>
 </p>
 
 Bases Paginator is a local, read-only Obsidian view that adds real page navigation to [Bases](https://help.obsidian.md/bases). It stays deliberately small and composes with native Bases instead of replacing its query controls.
