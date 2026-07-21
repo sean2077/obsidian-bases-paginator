@@ -7,10 +7,11 @@ import { basename, dirname, join, resolve } from "node:path";
 
 import { assertVersionAlignment, extractReleaseNotes, parseReleaseVersion, readReleaseSnapshot } from "./shared.mjs";
 
-const USAGE = `Usage: node scripts/release/verify.mjs <exact-tag> [--require-tag] [--notes-output <path>]
+const USAGE = `Usage: node scripts/release/verify.mjs <exact-tag> [--require-tag] [--notes-output <path>] [--published-release-json <path>]
 
 Verify that all version mirrors and the newest CHANGELOG.md section match the repository's
-complete unprefixed SemVer tag. With --require-tag, also require an annotated tag at HEAD.`;
+complete unprefixed SemVer tag. With --require-tag, also require an annotated tag at HEAD.
+With --published-release-json, require its body to exactly match the extracted notes.`;
 
 const args = process.argv.slice(2);
 if (args.includes("--help") || args.includes("-h")) {
@@ -32,6 +33,12 @@ function verifyRelease(cliArgs) {
 		notesOutput = cliArgs[notesOutputIndex + 1];
 		if (!notesOutput) throw new Error("--notes-output requires a path.");
 	}
+	const publishedReleaseJsonIndex = cliArgs.indexOf("--published-release-json");
+	let publishedReleaseJson = null;
+	if (publishedReleaseJsonIndex !== -1) {
+		publishedReleaseJson = cliArgs[publishedReleaseJsonIndex + 1];
+		if (!publishedReleaseJson) throw new Error("--published-release-json requires a path.");
+	}
 
 	const consumedIndexes = new Set();
 	const requireTagIndex = cliArgs.indexOf("--require-tag");
@@ -39,6 +46,10 @@ function verifyRelease(cliArgs) {
 	if (notesOutputIndex !== -1) {
 		consumedIndexes.add(notesOutputIndex);
 		consumedIndexes.add(notesOutputIndex + 1);
+	}
+	if (publishedReleaseJsonIndex !== -1) {
+		consumedIndexes.add(publishedReleaseJsonIndex);
+		consumedIndexes.add(publishedReleaseJsonIndex + 1);
 	}
 	const positional = cliArgs.filter((_arg, index) => !consumedIndexes.has(index));
 	if (positional.length !== 1) throw new Error(USAGE);
@@ -52,6 +63,7 @@ function verifyRelease(cliArgs) {
 	const notes = extractReleaseNotes(readFileSync(changelogPath, "utf8"), exactTag);
 
 	if (requireTag) assertAnnotatedTagAtHead(root, exactTag);
+	if (publishedReleaseJson) assertPublishedReleaseBody(resolve(publishedReleaseJson), notes);
 
 	if (notesOutput) {
 		const outputPath = resolve(notesOutput);
@@ -59,6 +71,24 @@ function verifyRelease(cliArgs) {
 		console.error(`Verified release ${exactTag}; wrote notes to ${outputPath}.`);
 	} else {
 		process.stdout.write(notes);
+	}
+}
+
+function assertPublishedReleaseBody(path, expectedNotes) {
+	let release;
+	try {
+		release = JSON.parse(readFileSync(path, "utf8"));
+	} catch (error) {
+		throw new Error(
+			`Could not read published release JSON at ${path}: ${error instanceof Error ? error.message : String(error)}`
+		);
+	}
+
+	if (typeof release !== "object" || release === null || Array.isArray(release) || typeof release.body !== "string") {
+		throw new Error(`Published release JSON at ${path} must contain a string body.`);
+	}
+	if (release.body !== expectedNotes) {
+		throw new Error("Published GitHub Release body does not exactly match the tagged CHANGELOG.md notes.");
 	}
 }
 

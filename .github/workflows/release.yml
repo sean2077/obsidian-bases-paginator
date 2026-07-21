@@ -93,8 +93,8 @@ jobs:
                   test "$(gh release view "$TAG_NAME" --json tagName --jq .tagName)" = "$TAG_NAME"
                   test "$(gh release view "$TAG_NAME" --json isDraft --jq .isDraft)" = "false"
                   test "$(gh release view "$TAG_NAME" --json isPrerelease --jq .isPrerelease)" = "$expected_prerelease"
-                  gh release view "$TAG_NAME" --json body --jq .body > "$RUNNER_TEMP/published-notes.md"
-                  diff -u "$RUNNER_TEMP/release-notes.md" "$RUNNER_TEMP/published-notes.md"
+                  gh release view "$TAG_NAME" --json body > "$RUNNER_TEMP/published-release.json"
+                  node scripts/release/verify.mjs "$TAG_NAME" --require-tag --published-release-json "$RUNNER_TEMP/published-release.json"
                   published_assets="$(gh release view "$TAG_NAME" --json assets --jq '.assets[].name')"
                   for asset in main.js manifest.json styles.css; do
                       grep -Fx "$asset" <<<"$published_assets"

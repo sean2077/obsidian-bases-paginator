@@ -18,6 +18,8 @@ describe("release tooling contracts", () => {
 		expect(releaseWorkflow).toContain("--require-tag");
 		expect(releaseWorkflow).toContain("--notes-output");
 		expect(releaseWorkflow).toContain('--notes-file "$RUNNER_TEMP/release-notes.md"');
+		expect(releaseWorkflow).toContain("--published-release-json");
+		expect(releaseWorkflow).not.toContain("--json body --jq .body >");
 		expect(releaseWorkflow).toContain("git merge-base --is-ancestor");
 		expect(releaseWorkflow.indexOf("git merge-base --is-ancestor")).toBeLessThan(
 			releaseWorkflow.indexOf('node scripts/release/verify.mjs "$TAG_NAME"')
