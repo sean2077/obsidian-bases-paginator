@@ -1,135 +1,49 @@
-import type { PageSizeOption, BasesPaginatorSettings } from '../types';
+import type { BasesPaginatorSettings, PageSizeOption } from "../types";
 
-/**
- * View type identifier for registration
- */
-export const VIEW_TYPE = 'paginated-table';
+/** Stable external identifier used in .base files. */
+export const VIEW_TYPE = "paginated-table";
 
-/**
- * View display name shown in Bases UI
- */
-export const VIEW_NAME = 'Paginated Table';
-
-/**
- * View icon (Lucide icon name)
- */
-export const VIEW_ICON = 'table-2';
-
-/**
- * Default page size options
- */
-export const PAGE_SIZE_OPTIONS: PageSizeOption[] = [
-	{ value: 10, label: '10' },
-	{ value: 25, label: '25' },
-	{ value: 50, label: '50' },
-	{ value: 100, label: '100' },
-	{ value: 'custom', label: 'Custom...' },
-];
-
-/**
- * Default page size
- */
+export const VIEW_NAME = "Paginated table";
+export const VIEW_ICON = "table-2";
 export const DEFAULT_PAGE_SIZE = 25;
 
-/**
- * Search debounce delay in milliseconds
- */
-export const SEARCH_DEBOUNCE_MS = 300;
+export const PAGE_SIZE_OPTIONS: PageSizeOption[] = [
+	{ value: 10, label: "10" },
+	{ value: 25, label: "25" },
+	{ value: 50, label: "50" },
+	{ value: 100, label: "100" },
+	{ value: "custom", label: "Custom" },
+];
 
-/**
- * Default plugin settings
- */
 export const DEFAULT_SETTINGS: BasesPaginatorSettings = {
 	defaultPageSize: DEFAULT_PAGE_SIZE,
+	stickyHeader: true,
 	showSearchBox: true,
 	showFilterBar: true,
-	stickyHeader: true,
 };
 
-/**
- * CSS class prefix for all plugin elements
- */
-export const CSS_PREFIX = 'bp';
+const CSS_PREFIX = "bp";
 
-/**
- * Pattern to match wikilinks: [[link]] or [[link|display]]
- */
-export const WIKILINK_PATTERN = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/;
-
-/**
- * Data attribute name for column index in table headers
- * - datasetKey: used with element.dataset[key]
- * - selector: used in CSS selectors [data-...]
- */
-export const COLUMN_INDEX_ATTR = {
-	datasetKey: 'columnIndex',
-	selector: 'data-column-index',
-};
-
-/**
- * CSS classes used throughout the plugin
- */
 export const CSS_CLASSES = {
-	// Container
 	container: `${CSS_PREFIX}-container`,
-
-	// Filter bar
-	filterBar: `${CSS_PREFIX}-filter-bar`,
-	searchSection: `${CSS_PREFIX}-search-section`,
-	searchInput: `${CSS_PREFIX}-search-input`,
-	activeFilters: `${CSS_PREFIX}-active-filters`,
-	presetSection: `${CSS_PREFIX}-preset-section`,
-	clearFiltersBtn: `${CSS_PREFIX}-clear-filters-btn`,
-
-	// Table
 	tableContainer: `${CSS_PREFIX}-table-container`,
 	table: `${CSS_PREFIX}-table`,
 	tableHeader: `${CSS_PREFIX}-table-header`,
 	tableHeaderSticky: `${CSS_PREFIX}-table-header-sticky`,
-	tableHeaderSortable: `${CSS_PREFIX}-table-header-sortable`,
-	tableHeaderSorted: `${CSS_PREFIX}-table-header-sorted`,
-	tableHeaderContent: `${CSS_PREFIX}-table-header-content`,
-	sortIndicator: `${CSS_PREFIX}-sort-indicator`,
 	tableRow: `${CSS_PREFIX}-table-row`,
 	tableCell: `${CSS_PREFIX}-table-cell`,
 	tableCellEmpty: `${CSS_PREFIX}-table-cell-empty`,
-
-	// List rendering
-	tableCellList: `${CSS_PREFIX}-table-cell-list`,
-	tableCellListItem: `${CSS_PREFIX}-table-cell-list-item`,
-	tableCellListBullet: `${CSS_PREFIX}-table-cell-list-bullet`,
-
-	// Column filter
-	columnFilterBtn: `${CSS_PREFIX}-column-filter-btn`,
-	columnFilterActive: `${CSS_PREFIX}-column-filter-active`,
-
-	// Column drag-to-reorder
-	tableHeaderDraggable: `${CSS_PREFIX}-table-header-draggable`,
-	tableHeaderDragging: `${CSS_PREFIX}-table-header-dragging`,
-	tableHeaderDragOver: `${CSS_PREFIX}-table-header-drag-over`,
-
-	// Pagination bar
+	groupRow: `${CSS_PREFIX}-group-row`,
+	groupCell: `${CSS_PREFIX}-group-cell`,
 	paginationBar: `${CSS_PREFIX}-pagination-bar`,
 	navContainer: `${CSS_PREFIX}-nav-container`,
 	paginationBtn: `${CSS_PREFIX}-pagination-btn`,
 	pageInfo: `${CSS_PREFIX}-page-info`,
 	itemInfo: `${CSS_PREFIX}-item-info`,
 	pageSizeSelector: `${CSS_PREFIX}-page-size-selector`,
-
-	// Empty state
-	emptyState: `${CSS_PREFIX}-empty-state`,
-
-	// Preset selector
-	presetSelector: `${CSS_PREFIX}-preset-selector`,
-	savePresetBtn: `${CSS_PREFIX}-save-preset-btn`,
-	presetNameInput: `${CSS_PREFIX}-preset-name-input`,
-
-	// Layout
-	layoutOrder1: `${CSS_PREFIX}-order-1`,
-	layoutOrder2: `${CSS_PREFIX}-order-2`,
-	layoutOrder3: `${CSS_PREFIX}-order-3`,
-
-	// Utility
-	hidden: `${CSS_PREFIX}-hidden`,
 	customPageSizeInput: `${CSS_PREFIX}-custom-page-size-input`,
+	customPageSizeError: `${CSS_PREFIX}-custom-page-size-error`,
+	emptyState: `${CSS_PREFIX}-empty-state`,
+	layoutOrder1: `${CSS_PREFIX}-order-1`,
+	layoutOrder3: `${CSS_PREFIX}-order-3`,
 } as const;

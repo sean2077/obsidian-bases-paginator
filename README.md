@@ -1,70 +1,48 @@
 # Bases Paginator
 
 <p align="center">
-    <a href="https://obsidian.md/"><img
-            src="https://img.shields.io/badge/Obsidian%20Plugin-1e1e1e?logo=obsidian&logoColor=white"
-            alt="Obsidian Plugin" /></a>
-    <a href="https://github.com/sean2077/obsidian-bases-paginator/releases/latest"><img
-            src="https://img.shields.io/github/v/release/sean2077/obsidian-bases-paginator"
-            alt="Latest Release" /></a>
-    <a href="https://github.com/sean2077/obsidian-bases-paginator/releases"><img
-            src="https://img.shields.io/github/downloads/sean2077/obsidian-bases-paginator/total?logo=github"
-            alt="GitHub Downloads" /></a>
-    <a href="https://github.com/sean2077/obsidian-bases-paginator/stargazers"><img
-            src="https://img.shields.io/github/stars/sean2077/obsidian-bases-paginator"
-            alt="GitHub Stars" /></a>
-    <a href="https://github.com/sean2077/obsidian-bases-paginator/actions"><img
-            src="https://img.shields.io/github/actions/workflow/status/sean2077/obsidian-bases-paginator/release.yml?branch=master"
-            alt="Build Status" /></a>
+  <a href="https://obsidian.md/"><img src="https://img.shields.io/badge/Obsidian%20Plugin-1e1e1e?logo=obsidian&logoColor=white" alt="Obsidian plugin" /></a>
+  <a href="https://github.com/sean2077/obsidian-bases-paginator/releases/latest"><img src="https://img.shields.io/github/v/release/sean2077/obsidian-bases-paginator" alt="Latest release" /></a>
+  <a href="https://github.com/sean2077/obsidian-bases-paginator/actions"><img src="https://img.shields.io/github/actions/workflow/status/sean2077/obsidian-bases-paginator/release.yml?branch=master" alt="Build status" /></a>
 </p>
 
-</div>
+Bases Paginator is a local, read-only Obsidian view that adds real page navigation to [Bases](https://help.obsidian.md/bases). It stays deliberately small and composes with native Bases instead of replacing its query controls.
 
-A plugin for [Obsidian](https://obsidian.md) that adds a paginated table view with column filtering to Obsidian Bases.
+Requires Obsidian 1.12.0 or later with the Bases core plugin enabled. Desktop and mobile are supported.
 
-> **Note:** Requires Obsidian v1.10.0+ with the Bases core plugin enabled.
+## Why this plugin still exists
 
-![](./assets/paginated-table.png)
+Native Bases can limit the number of query results, but a result limit does not provide next/previous pages or access to the remaining results. This plugin keeps that narrow missing capability:
 
-## Features
+- First, previous, next, and last page navigation
+- Standard and custom page sizes from 1 to 1,000
+- Group-aware pagination using the native Bases grouping result
+- Native rendering for links, tags, lists, images, formulas, dates, booleans, and numbers
+- Sticky header and top/bottom pagination placement
+- Keyboard-accessible controls, screen-reader status, and mobile-sized touch targets
 
-- **Pagination**: Navigate large datasets with configurable page sizes (10/25/50/100)
-- **Global Search**: Real-time search across all visible columns
-- **Column Filters**: Multi-select dropdown filters on column headers (right-click to enable)
-- **Sorting**: Click column headers to sort with natural ordering (e.g., "file2" before "file10")
-- **Filter Presets**: Save, update, and delete complete view state (search, column filters, page size, current page)
-- **List Rendering**: Configurable display for multi-value properties (line-by-line with bullets or comma-separated)
-- **Column Reordering**: Drag column headers to rearrange columns (session-only, see Limitations)
-- **Native Rendering**: Uses Bases' native rendering for links, tags, etc.
+Native Bases owns search, filters, named views, sorting, property order and width, summaries, copy/export, and selection. Configure those from the Bases toolbar; the paginated view consumes the resulting order and groups.
 
-## Limitations
+## Important: native result limit
 
-This is a **read-only** custom view. Due to Bases API limitations:
-
-- Cannot edit cell values (use native Bases Table view or edit source files)
-- Cannot add/delete rows or list items
-- Column drag-and-drop reordering is **session-only** (not persisted). The Bases API doesn't expose a `setOrder()` method. For persistent column ordering, use the native **Properties** toolbar menu.
+The Obsidian API gives custom views data after the native result limit has already been applied. To paginate the complete filtered result set, remove the Bases result limit or set it high enough for the data you want to page through. The plugin cannot recover rows that the native query omitted.
 
 ## Usage
 
-### In `.base` Files
+1. Open a `.base` file or embedded Base.
+2. Open the view switcher and choose **Paginated table**.
+3. Use native Bases controls for search, filters, sorting, grouping, and properties.
+4. Choose the page size from the pagination bar or view options.
 
-1. Open any `.base` file in Obsidian
-2. Click the view switcher in the toolbar
-3. Select **"Paginated Table"** from the view options
-4. Configure view options:
-   - Items per page
-   - Filterable columns (or right-click column headers to enable)
-   - Toggle search box
-   - Show/hide filter bar
-   - Sticky header
-   - Pagination position (top/bottom)
-   - List rendering mode (line-by-line or comma-separated)
-5. Drag column headers to reorder columns (session-only), or use **Properties** toolbar for persistent ordering
+The current persisted view options are:
 
-### In Markdown (Base Code Block)
+| Key | Values | Purpose |
+|---|---|---|
+| `pageSize` | `10`, `25`, `50`, `100`, or a custom value entered in the view | Items per page |
+| `stickyHeader` | `true` or `false` | Keep column names visible while scrolling |
+| `paginationPosition` | `top` or `bottom` | Place the pagination bar above or below the table |
 
-You can embed a paginated table directly in any Markdown note using a base code block:
+Example:
 
 ````markdown
 ```base
@@ -73,81 +51,56 @@ filters:
     - file.hasTag("task")
 views:
   - type: paginated-table
-    name: "My Tasks"
+    name: "My tasks"
     pageSize: "25"
-    showSearchBox: true
-    showFilterBar: true
     stickyHeader: true
     paginationPosition: "top"
-    listRenderMode: "comma"
 ```
 ````
 
-### View Options Reference
+You can embed a named view with `![[MyDatabase.base#My tasks]]`.
 
-| Option               | Type     | Default   | Description                                                                 |
-| -------------------- | -------- | --------- | --------------------------------------------------------------------------- |
-| `pageSize`           | string   | `"25"`    | Items per page (`"10"`, `"25"`, `"50"`, `"100"`)                            |
-| `showSearchBox`      | boolean  | `true`    | Show global search input                                                    |
-| `filterableColumns`  | string[] | `[]`      | Columns with filter dropdowns (property IDs)                                |
-| `showFilterBar`      | boolean  | `true`    | Show filter bar with search and presets                                     |
-| `stickyHeader`       | boolean  | `true`    | Keep table header visible when scrolling                                    |
-| `paginationPosition` | string   | `"top"`   | Position of pagination bar (`"top"` or `"bottom"`)                          |
-| `listRenderMode`     | string   | `"comma"` | List rendering (`"bullet"` for line-by-line, `"comma"` for comma-separated) |
+## Upgrading from the previous full-table UI
 
-### Embedding Base Views
+Older releases stored `showSearchBox`, `showFilterBar`, `filterableColumns`, `filterPresets`, and `listRenderMode`. Those keys are now legacy:
 
-You can also embed a specific view from a `.base` file into another note:
+- Existing `.base` files remain valid and the plugin leaves the legacy values untouched.
+- The legacy values no longer change rendering.
+- Recreate saved filter combinations as native named views and use native search, filters, sort, and property controls.
 
-```markdown
-![[MyDatabase.base#My Tasks]]
-```
+Plugin-wide search/filter defaults are also retained when old `data.json` settings are loaded, so saving current pagination defaults is non-destructive.
 
-This will render the "My Tasks" view (if it's a paginated-table type) inline in your note
+## Limitations
+
+- The view cannot edit cells, create/delete rows, or change source notes. Use the native Table view or edit the note.
+- Pagination covers only rows supplied by the Bases API after native filters, sort, and limit.
+- Native Table-only interactions such as multi-cell selection, paste, and summaries are not reimplemented.
 
 ## Installation
 
-### From Community Plugins (Coming Soon)
-1. Open Obsidian Settings
-2. Go to Community Plugins
-3. Search for "Bases Paginator"
-4. Click Install, then Enable
+### Community plugins
 
-### Using BRAT
-1. Install [BRAT](https://github.com/TfTHacker/obsidian42-brat) from Community Plugins
-2. Open BRAT settings and click "Add Beta plugin"
-3. Enter repository URL: `https://github.com/sean2077/obsidian-bases-paginator`
-4. Click "Add Plugin" and enable it in Community Plugins
+1. Open **Settings → Community plugins**.
+2. Search for **Bases Paginator**.
+3. Select **Install**, then **Enable**.
 
-### Manual Installation
-1. Download `main.js`, `styles.css`, and `manifest.json` from the latest release
-2. Create folder: `VaultFolder/.obsidian/plugins/bases-paginator/`
-3. Copy the downloaded files into the folder
-4. Reload Obsidian
-5. Enable the plugin in Settings > Community Plugins
+### BRAT
+
+Add `https://github.com/sean2077/obsidian-bases-paginator` in BRAT, then enable the plugin.
+
+### Manual
+
+Copy `main.js`, `manifest.json`, and `styles.css` from the latest release into:
+
+```text
+<Vault>/.obsidian/plugins/bases-paginator/
+```
+
+Reload Obsidian and enable the plugin under Community plugins.
 
 ## Development
 
-See the [development guide](./docs/development.md) for architecture, contributor constraints, manual verification, and release details.
-
-```bash
-# Install dependencies
-npm install
-
-# Development mode (watch)
-npm run dev
-
-# Production build
-npm run build
-
-# Lint code
-npm run lint
-```
-
-## Requirements
-
-- Obsidian v1.10.0 or higher
-- Bases core plugin enabled
+See the [development guide](./docs/development.md) for commands, architecture, compatibility decisions, verification, and release details.
 
 ## License
 

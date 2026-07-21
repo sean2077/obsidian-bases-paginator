@@ -1,87 +1,36 @@
-import type { ViewOption } from 'obsidian';
-import { DEFAULT_PAGE_SIZE } from '../utils/constants';
+import type { BasesAllOptions } from "obsidian";
+import type { BasesPaginatorSettings } from "../types";
 
-/**
- * Get ViewOptions configuration for the paginated table view
- */
-export function getViewOptions(): ViewOption[] {
+/** Options unique to the paginated presentation; native Bases owns query controls. */
+export function getViewOptions(defaults: BasesPaginatorSettings): BasesAllOptions[] {
 	return [
-		// Page size dropdown
 		{
-			type: 'dropdown',
-			key: 'pageSize',
-			displayName: 'Items per page',
+			type: "dropdown",
+			key: "pageSize",
+			displayName: "Items per page",
+			default: String(defaults.defaultPageSize),
 			options: {
-				'10': '10',
-				'25': '25',
-				'50': '50',
-				'100': '100',
+				"10": "10",
+				"25": "25",
+				"50": "50",
+				"100": "100",
 			},
-		} as ViewOption,
-
-		// Show search box toggle
+		},
 		{
-			type: 'toggle',
-			key: 'showSearchBox',
-			displayName: 'Show search box',
-		} as ViewOption,
-
-		// Filterable columns (multi-text input)
+			type: "toggle",
+			key: "stickyHeader",
+			displayName: "Sticky header",
+			default: defaults.stickyHeader,
+		},
 		{
-			type: 'multitext',
-			key: 'filterableColumns',
-			displayName: 'Filterable columns',
-			default: [],
-		} as ViewOption,
-
-		// Show filter bar toggle
-		{
-			type: 'toggle',
-			key: 'showFilterBar',
-			displayName: 'Show filter bar',
-		} as ViewOption,
-
-		// Sticky header toggle
-		{
-			type: 'toggle',
-			key: 'stickyHeader',
-			displayName: 'Sticky header',
-		} as ViewOption,
-
-		// Pagination position
-		{
-			type: 'dropdown',
-			key: 'paginationPosition',
-			displayName: 'Pagination position',
+			type: "dropdown",
+			key: "paginationPosition",
+			displayName: "Pagination position",
+			default: "top",
 			options: {
-				'top': 'Top',
-				'bottom': 'Bottom',
+				top: "Top",
+				bottom: "Bottom",
 			},
-		} as ViewOption,
-
-		// List rendering mode
-		{
-			type: 'dropdown',
-			key: 'listRenderMode',
-			displayName: 'List rendering',
-			options: {
-				'bullet': 'Line-by-line',
-				'comma': 'Comma-separated',
-			},
-		} as ViewOption,
+		},
 	];
 }
-
-/**
- * Default values for view options
- */
-export const VIEW_OPTION_DEFAULTS = {
-	pageSize: String(DEFAULT_PAGE_SIZE),
-	showSearchBox: true,
-	filterableColumns: [] as string[],
-	showFilterBar: true,
-	stickyHeader: true,
-	filterPresets: '[]',
-	paginationPosition: 'top',
-	listRenderMode: 'comma',
-};

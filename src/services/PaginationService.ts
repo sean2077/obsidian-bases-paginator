@@ -1,23 +1,19 @@
-import type { PaginationState } from '../types';
-import { DEFAULT_PAGE_SIZE } from '../utils/constants';
-import { calculateTotalPages, clamp, getPageIndices } from '../utils/helpers';
+import type { PaginationState } from "../types";
+import { DEFAULT_PAGE_SIZE } from "../utils/constants";
+import { calculateTotalPages, clamp } from "../utils/helpers";
+
+const MAX_PAGE_SIZE = 1000;
 
 /**
  * Service for managing pagination state and logic
  */
 export class PaginationService {
-	private state: PaginationState;
-	private onChange: () => void;
-
-	constructor(onChange: () => void) {
-		this.onChange = onChange;
-		this.state = {
-			currentPage: 1,
-			pageSize: DEFAULT_PAGE_SIZE,
-			totalItems: 0,
-			totalPages: 1,
-		};
-	}
+	private state: PaginationState = {
+		currentPage: 1,
+		pageSize: DEFAULT_PAGE_SIZE,
+		totalItems: 0,
+		totalPages: 1,
+	};
 
 	/**
 	 * Get current pagination state
@@ -29,22 +25,25 @@ export class PaginationService {
 	/**
 	 * Set the page size
 	 */
-	setPageSize(size: number): void {
-		if (!Number.isFinite(size) || size <= 0) return;
+	setPageSize(size: number): boolean {
+		if (!Number.isInteger(size) || size < 1 || size > MAX_PAGE_SIZE || size === this.state.pageSize) {
+			return false;
+		}
 
 		this.state.pageSize = size;
 		this.state.totalPages = calculateTotalPages(this.state.totalItems, size);
 		// Reset to page 1 when page size changes, or adjust if current page is now out of range
 		this.state.currentPage = clamp(this.state.currentPage, 1, this.state.totalPages);
-		this.onChange();
+		return true;
 	}
 
 	/**
 	 * Update total items count (called when data changes)
 	 */
 	setTotalItems(total: number): void {
-		this.state.totalItems = total;
-		this.state.totalPages = calculateTotalPages(total, this.state.pageSize);
+		const safeTotal = Number.isInteger(total) && total >= 0 ? total : 0;
+		this.state.totalItems = safeTotal;
+		this.state.totalPages = calculateTotalPages(safeTotal, this.state.pageSize);
 		// Adjust current page if it's now out of range
 		this.state.currentPage = clamp(this.state.currentPage, 1, this.state.totalPages);
 	}
@@ -52,30 +51,13 @@ export class PaginationService {
 	/**
 	 * Go to a specific page
 	 */
-	goToPage(page: number): void {
+	goToPage(page: number): boolean {
+		if (!Number.isInteger(page)) return false;
 		const newPage = clamp(page, 1, this.state.totalPages);
 		if (newPage !== this.state.currentPage) {
 			this.state.currentPage = newPage;
-			this.onChange();
+			return true;
 		}
-	}
-
-	/**
-	 * Reset to first page (used when filters change)
-	 */
-	resetToFirst(): void {
-		this.state.currentPage = 1;
-	}
-
-	/**
-	 * Get the slice of data for the current page
-	 */
-	getPageData<T>(data: T[]): T[] {
-		const { start, end } = getPageIndices(
-			this.state.currentPage,
-			this.state.pageSize,
-			data.length
-		);
-		return data.slice(start, end);
+		return false;
 	}
 }

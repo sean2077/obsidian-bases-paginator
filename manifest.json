@@ -2,8 +2,8 @@
 	"id": "bases-paginator",
 	"name": "Bases Paginator",
 	"version": "1.5.0",
-	"minAppVersion": "1.10.0",
-	"description": "Adds a paginated table view with quick filtering to Bases. Features include pagination controls, global search, click-to-filter, and filter presets.",
+	"minAppVersion": "1.12.0",
+	"description": "Adds a group-aware paginated table view to Obsidian Bases.",
 	"author": "sean2077",
 	"authorUrl": "https://github.com/sean2077",
 	"isDesktopOnly": false
