@@ -34,5 +34,8 @@
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.59.1",
 		"vitest": "^4.1.10"
+	},
+	"allowScripts": {
+		"esbuild@0.28.1": true
 	}
 }
