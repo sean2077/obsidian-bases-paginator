@@ -11,9 +11,10 @@ CI verifies current Node.js 20 and 22 releases. Use npm and the checked-in lockf
 | Clean dependency install | `npm ci` | Required before final verification. |
 | Intentional dependency change | `npm install` | Review the matching lockfile diff and audit output. |
 | Automated tests | `npm test` | Runs service, compatibility, rendering, and DOM interaction tests. |
-| Obsidian host smoke | `npm run test:host -- --vault <test-vault> --base <fixture.base> --embed <fixture.md>` | Builds, deploys, and verifies the plugin in a running disposable vault through Obsidian CLI/CDP. |
+| Prepare host fixture | `npm run test:host:setup -- --target <absolute-test-vault> [--adopt]` | Idempotently writes only the tracked scenario fixture to an explicitly named disposable vault. |
+| Obsidian host gate | `npm run test:host -- --vault <test-vault> --scenarios tests/fixtures/host-vault/scenarios.json` | Builds, deploys, and verifies the tracked matrix in a running Obsidian app through CLI/CDP. |
 | Test watch mode | `npm run test:watch` | Local iteration only. |
-| Formatting check | `npm run fmt:check` | Covers source, tests, and root JSON/config files. |
+| Formatting check | `npm run fmt:check` | Covers source, tests, host fixture/tooling, Dependabot, and root JSON/config files. |
 | Lint | `npm run lint` | Applies Obsidian and TypeScript rules. |
 | Production build | `npm run build` | Type-checks, then creates the minified local `main.js`. |
 | Development watch | `npm run dev` | Rebuilds the ignored local bundle. |
@@ -88,30 +89,33 @@ Major-version differences in `npm outdated` are not automatic upgrade instructio
 
 Never develop or run these checks in a primary vault. Use an independent disposable test vault whose name contains `test`, `qa`, `sandbox`, or `disposable`, with Bases enabled and a fixture that renders at least two pages. Obsidian 1.12.7 or newer must be running with its CLI enabled.
 
-Run the repeatable host smoke first:
+Prepare the tracked fixture once, or whenever its specification changes. The target directory name must contain `test`, `qa`, `sandbox`, or `disposable`. A non-empty unmarked directory is rejected unless `--adopt` is explicit; adoption preserves unrelated files and later setup runs replace only marker-owned fixture files.
+
+```bash
+npm run test:host:setup -- --target "/absolute/path/to/obsidian-test-vault" --adopt
+```
+
+Open or register that vault in Obsidian, enable the CLI, and run the authoritative gate:
+
+```bash
+npm run test:host -- --vault obsidian-test-vault --scenarios tests/fixtures/host-vault/scenarios.json
+```
+
+The gate resolves only the explicit vault, asks Obsidian to ingest the prepared fixture, builds and deploys the current package below the vault's resolved config directory, and then remains read-only with respect to vault content. It uses `base:query` as the native data oracle and the real custom view for rendering evidence. The tracked matrix covers empty, single, exact-boundary, limited, grouped multi-page, malformed legacy, native-value, custom page-size, and 1,200-row cases. It also verifies disable/re-enable and repeated reloads, direct and embedded views, all-page path coverage, CDP mouse and keyboard navigation, invalid custom input, named accessibility roles, 390×844 mobile layout, advisory heap/timing evidence, and empty error buffers. Screenshots are written under `.oma/obsidian-host-test/`; every vault file outside the Obsidian config directory is hashed before and after.
+
+The legacy single-fixture form remains available for quick compatibility smoke tests:
 
 ```bash
 npm run test:host -- --vault obsidian-test-vault --base "Paginator QA.base" --embed "Dashboard.md"
 ```
 
-The command builds and copies `main.js`, `manifest.json`, and `styles.css` into the named vault's plugin directory, reloads the plugin twice, opens the direct and embedded fixtures, navigates through CDP mouse input, checks the accessibility tree and error buffers, captures desktop and 390×844 mobile screenshots under `.oma/obsidian-host-test/`, and verifies that `.md`, `.base`, and `.canvas` hashes did not change. It intentionally stays out of GitHub Actions because it requires a running desktop Obsidian instance.
+The host gate intentionally stays out of GitHub Actions because it requires a running desktop Obsidian instance.
 
-Prefer `dev:dom`, `eval`, `dev:cdp`, `dev:errors`, `dev:console`, and `dev:screenshot` for the remaining matrix. Computer Use is a fallback only for OS-level dialogs or window chrome. Real screen-reader speech, OS focus behavior, hover timing outside the renderer, and physical iOS/Android behavior remain manual.
+Prefer `dev:dom`, `eval`, `dev:cdp`, `dev:errors`, `dev:console`, and `dev:screenshot` for diagnosis and additional host evidence. Computer Use is a fallback only for OS-level dialogs or window chrome. Real screen-reader speech, OS focus behavior, hover timing outside the renderer, and physical iOS/Android behavior remain manual.
 
-Required matrix for user-visible or data-flow changes:
+Vitest remains authoritative for isolated invalid values (`0`, negative, fractional, non-numeric, and over 1,000), modifier/middle-click routing, hover event payloads, settings persistence, and 10,000-entry paginator bounds. Add a tracked host scenario when a new behavior depends on real Bases data, lifecycle, rendering, CSS, or accessibility semantics.
 
-1. Enable, disable, reload, and re-enable the plugin; confirm there is one view registration and no duplicated controls or console errors.
-2. Open both a `.base` file and an embedded named view. Confirm empty, one-row, one-page, exact-boundary, and multi-page data.
-3. Test page sizes 10/25/50/100 and custom values 1, 37, 1,000; reject 0, negative, non-numeric, and values over 1,000.
-4. Apply native search, typed filters, multi-sort, property order, and grouping. Confirm the paginated result keeps native order and repeats the correct group heading when a group spans pages.
-5. Set a restrictive native result limit, confirm the documented truncated total, then remove/raise it and confirm all filtered entries become pageable.
-6. Include null, empty, `0`, `false`, number, date, formula, tag, link, alias, list-with-commas, image, and error values. Confirm native rendering and no uncaught exception.
-7. Activate links with plain click, modifier-click, middle-click, and hover preview. Confirm the expected workspace target and no vault writes.
-8. Change plugin defaults and per-view options, reload, and confirm scope/persistence. Open a legacy `.base` containing retired keys and malformed legacy preset text; confirm it renders and the file is not rewritten.
-9. Test keyboard-only navigation, focus visibility, screen-reader names/status, light/dark themes, a narrow desktop pane, and an iOS or Android device/emulator.
-10. Compare test-vault note/frontmatter contents before and after the run; only plugin settings or explicitly changed view pagination options may differ.
-
-Record the Obsidian version/channel, platform, vault fixture, host-smoke JSON summary, residual observations, and any console warning. Do not claim the full gate from Vitest or the host smoke alone when the change touches a residual manual boundary.
+Residual manual checks are limited to real screen-reader speech, OS-level window focus, hover timing outside the renderer, theme-specific visual judgment, and physical iOS/Android behavior. Use Computer Use only when one of those checks depends on OS dialogs or window chrome. Record the Obsidian version/channel, platform, fixture ID, JSON summary, screenshots, performance observations, and any residual checks relevant to the change.
 
 ## Release flow
 

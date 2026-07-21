@@ -26,6 +26,7 @@ describe("PaginationBar DOM click events", () => {
 		const buttons = [...container.querySelectorAll("button")];
 		expect(buttons).not.toHaveLength(0);
 		expect(buttons.every((button) => Boolean(button.getAttribute("aria-label")))).toBe(true);
+		expect(container.querySelector('nav[aria-label="Pagination"]')).not.toBeNull();
 		expect(container.querySelector('[role="status"]')?.getAttribute("aria-live")).toBe("polite");
 
 		const select = container.querySelector("select");

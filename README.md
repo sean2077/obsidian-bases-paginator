@@ -51,10 +51,10 @@ filters:
     - file.hasTag("task")
 views:
   - type: paginated-table
-    name: "My tasks"
+    name: My tasks
     pageSize: "25"
     stickyHeader: true
-    paginationPosition: "top"
+    paginationPosition: top
 ```
 ````
 

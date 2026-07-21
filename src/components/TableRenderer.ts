@@ -27,7 +27,10 @@ export class TableRenderer {
 		private options: TableRendererOptions
 	) {
 		containerEl.addClass(CSS_CLASSES.tableContainer);
-		this.tableEl = containerEl.createEl("table", { cls: CSS_CLASSES.table });
+		this.tableEl = containerEl.createEl("table", {
+			cls: CSS_CLASSES.table,
+			attr: { "aria-label": "Paginated results" },
+		});
 		this.headerEl = this.tableEl.createEl("thead");
 		this.bodyEl = this.tableEl.createEl("tbody");
 		this.emptyEl = containerEl.createDiv({ cls: CSS_CLASSES.emptyState, text: "No results" });

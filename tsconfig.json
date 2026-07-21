@@ -24,5 +24,5 @@
 		"useUnknownInCatchVariables": true,
 		"lib": ["DOM", "ES2021"]
 	},
-	"include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
+	"include": ["src/**/*.ts", "tests/**/*.ts", ".agents/skills/**/*.d.mts", "vitest.config.ts"]
 }

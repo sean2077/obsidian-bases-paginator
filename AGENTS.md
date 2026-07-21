@@ -19,7 +19,7 @@
 
 - Use npm and the checked-in lockfile. Use `npm ci` for a clean dependency install; use `npm install` only when intentionally changing dependencies.
 - Before handoff, run `npm run fmt:check`, `npm run lint`, `npm test`, and `npm run build`; these match the repository's CI gate.
-- UI or data-flow changes also require the CLI-first disposable-vault gate and any residual manual checks in the development guide; automated tests do not replace Obsidian runtime verification.
+- UI or data-flow changes also require the tracked CLI scenario gate in the development guide and any relevant residual manual checks. Prepare its fixture only through `test:host:setup` in an explicitly named disposable vault; the verification job must leave vault content unchanged.
 - Never commit `node_modules/`, generated `main.js`, or sourcemaps. Keep `manifest.json` and `styles.css` at the repository root because releases attach them directly.
 
 ## Engineering invariants
