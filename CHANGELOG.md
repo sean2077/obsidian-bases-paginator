@@ -1,3 +1,9 @@
+## [2.0.4](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.3...2.0.4) (2026-07-21)
+
+### Fixes
+
+* **release:** compare published notes from structured JSON so GitHub CLI display newlines cannot fail release verification
+
 ## [2.0.3](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.2...2.0.3) (2026-07-21)
 
 ### Fixes

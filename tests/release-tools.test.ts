@@ -25,6 +25,21 @@ describe("release scripts", () => {
 		expect(readFileSync(notesPath, "utf8")).toBe("### Fixed\n\n- Deterministic release notes.\n");
 	});
 
+	it("compares the published release body from JSON without CLI display newlines", () => {
+		const fixture = createFixture();
+		const releasePath = join(fixture, "published-release.json");
+		const notes = "### Fixed\n\n- Deterministic release notes.\n";
+		writeJson(releasePath, { body: notes });
+
+		const exact = runNode(verifyScript, ["2.0.2", "--published-release-json", releasePath], fixture);
+		expect(exact.status, exact.stderr).toBe(0);
+
+		writeJson(releasePath, { body: `${notes}\n` });
+		const extraNewline = runNode(verifyScript, ["2.0.2", "--published-release-json", releasePath], fixture);
+		expect(extraNewline.status).toBe(1);
+		expect(extraNewline.stderr).toContain("does not exactly match");
+	});
+
 	it("ignores matching headings inside fenced code blocks", () => {
 		const fixture = createFixture(`\uFEFF## [2.0.2](https://example.test/compare/2.0.1...2.0.2) (2026-07-21)
 

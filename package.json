@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-bases-paginator",
-	"version": "2.0.3",
+	"version": "2.0.4",
 	"description": "Adds a group-aware paginated table view to Obsidian Bases",
 	"main": "main.js",
 	"type": "module",
