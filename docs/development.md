@@ -123,6 +123,7 @@ Semantic Release runs after the Node.js build workflow succeeds on `main` or `ma
 
 - Conventional commits determine the version and release notes.
 - `.releaserc.yml` synchronizes `manifest.json`, `package.json`, `package-lock.json`, `src/version.ts`, and `versions.json`.
+- Generated version metadata must pass `npm run fmt:check` before publishing continues.
 - Tags have no leading `v`.
 - GitHub release assets are `main.js`, `manifest.json`, and `styles.css`.
 - Successful releases generate SLSA provenance attestations for all three assets.
