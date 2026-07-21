@@ -1,0 +1,125 @@
+{
+	"version": 1,
+	"fixtureId": "bases-paginator-host-v2",
+	"sets": [
+		{ "id": "grouped", "tag": "host-grouped", "count": 30, "kind": "standard" },
+		{ "id": "single", "tag": "host-single", "count": 1, "kind": "standard" },
+		{ "id": "exact", "tag": "host-exact", "count": 10, "kind": "standard" },
+		{ "id": "limit", "tag": "host-limit", "count": 20, "kind": "standard" },
+		{ "id": "values", "tag": "host-values", "count": 8, "kind": "values" },
+		{ "id": "page1", "tag": "host-page-1", "count": 3, "kind": "standard" },
+		{ "id": "page37", "tag": "host-page-37", "count": 74, "kind": "standard" },
+		{ "id": "large", "tag": "host-large", "count": 1200, "kind": "compact" }
+	],
+	"scenarios": [
+		{
+			"id": "grouped",
+			"set": "grouped",
+			"view": "Grouped pagination",
+			"base": "Bases/Grouped.base",
+			"embed": "Embeds/Grouped.md",
+			"pageSize": 10,
+			"groupBy": "status",
+			"sort": ["status", "score"],
+			"primary": true,
+			"walkAllPages": true,
+			"expectGroups": true
+		},
+		{
+			"id": "empty",
+			"tag": "host-empty",
+			"view": "Empty results",
+			"base": "Bases/Empty.base",
+			"embed": "Embeds/Empty.md",
+			"pageSize": 10
+		},
+		{
+			"id": "single",
+			"set": "single",
+			"view": "Single result",
+			"base": "Bases/Single.base",
+			"embed": "Embeds/Single.md",
+			"pageSize": 10
+		},
+		{
+			"id": "exact",
+			"set": "exact",
+			"view": "Exact boundary",
+			"base": "Bases/Exact.base",
+			"embed": "Embeds/Exact.md",
+			"pageSize": 10
+		},
+		{
+			"id": "limit",
+			"set": "limit",
+			"view": "Restricted result limit",
+			"base": "Bases/Limit.base",
+			"embed": "Embeds/Limit.md",
+			"pageSize": 10,
+			"limit": 7,
+			"sourceTotal": 20
+		},
+		{
+			"id": "values",
+			"set": "values",
+			"view": "Native values",
+			"base": "Bases/Values.base",
+			"embed": "Embeds/Values.md",
+			"pageSize": 10,
+			"valueAssertions": true
+		},
+		{
+			"id": "legacy",
+			"set": "exact",
+			"view": "Malformed legacy fallback",
+			"base": "Bases/Legacy.base",
+			"embed": "Embeds/Legacy.md",
+			"pageSize": 25,
+			"rawPageSize": "12.5",
+			"legacy": true
+		},
+		{
+			"id": "page-1",
+			"set": "page1",
+			"view": "Custom page size 1",
+			"base": "Bases/Page 1.base",
+			"embed": "Embeds/Page 1.md",
+			"pageSize": 1,
+			"walkAllPages": true
+		},
+		{
+			"id": "page-37",
+			"set": "page37",
+			"view": "Custom page size 37",
+			"base": "Bases/Page 37.base",
+			"embed": "Embeds/Page 37.md",
+			"pageSize": 37,
+			"walkAllPages": true
+		},
+		{
+			"id": "page-50",
+			"set": "large",
+			"view": "Standard page size 50",
+			"base": "Bases/Page 50.base",
+			"embed": "Embeds/Page 50.md",
+			"pageSize": 50
+		},
+		{
+			"id": "page-100",
+			"set": "large",
+			"view": "Standard page size 100",
+			"base": "Bases/Page 100.base",
+			"embed": "Embeds/Page 100.md",
+			"pageSize": 100
+		},
+		{
+			"id": "page-1000",
+			"set": "large",
+			"view": "Large host baseline",
+			"base": "Bases/Page 1000.base",
+			"embed": "Embeds/Page 1000.md",
+			"pageSize": 1000,
+			"performance": true
+		}
+	]
+}

@@ -63,7 +63,10 @@ export class PaginationBar {
 			if (event.key === "Escape") this.customPageSizeInput.blur();
 		});
 
-		const navigation = containerEl.createDiv({ cls: CSS_CLASSES.navContainer });
+		const navigation = containerEl.createEl("nav", {
+			cls: CSS_CLASSES.navContainer,
+			attr: { "aria-label": "Pagination" },
+		});
 		this.firstButton = this.createButton(navigation, "First page", "chevrons-left", () => 1);
 		this.previousButton = this.createButton(
 			navigation,

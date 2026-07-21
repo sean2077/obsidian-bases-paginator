@@ -5,15 +5,21 @@ updates:
       schedule:
           interval: "weekly"
       groups:
-          all-deps:
+          compatible-dependencies:
               patterns:
                   - "*"
+              update-types:
+                  - "minor"
+                  - "patch"
 
     - package-ecosystem: "github-actions"
       directory: "/"
       schedule:
           interval: "weekly"
       groups:
-          all-actions:
+          compatible-actions:
               patterns:
                   - "*"
+              update-types:
+                  - "minor"
+                  - "patch"

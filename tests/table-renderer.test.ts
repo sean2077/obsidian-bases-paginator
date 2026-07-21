@@ -3,6 +3,17 @@ import type { App } from "obsidian";
 import { TableRenderer } from "../src/components/TableRenderer";
 
 describe("TableRenderer native value rendering", () => {
+	it("exposes the paginated result table with an accessible name", () => {
+		const container = document.body.createDiv();
+		new TableRenderer(createApp(), container, (property) => property, {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: true,
+		});
+
+		expect(container.querySelector('table[aria-label="Paginated results"]')).not.toBeNull();
+	});
+
 	it("delegates list values with commas to renderTo without parsing", () => {
 		const container = document.body.createDiv();
 		const renderTo = vi.fn((element: HTMLElement) => element.setText("Alpha, beta · note, one"));
