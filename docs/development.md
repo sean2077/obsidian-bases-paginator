@@ -14,6 +14,8 @@ CI verifies current Node.js 20 and 22 releases. Use npm and the checked-in lockf
 | Prepare host fixture | `npm run test:host:setup -- --target <absolute-test-vault> [--adopt]` | Idempotently writes only the tracked scenario fixture to an explicitly named disposable vault. |
 | Obsidian host gate | `npm run test:host -- --vault <test-vault> --scenarios tests/fixtures/host-vault/scenarios.json` | Builds, deploys, and verifies the tracked matrix in a running Obsidian app through CLI/CDP. |
 | Test watch mode | `npm run test:watch` | Local iteration only. |
+| Preview/synchronize a release version | `npm run release:bump -- <version> [--dry-run]` | Requires a clean worktree; updates only the five version mirrors and never commits, tags, or pushes. |
+| Verify a release snapshot | `npm run release:verify -- <version>` | Requires aligned version mirrors and a non-empty newest Changelog section; prints the exact release notes. |
 | Formatting check | `npm run fmt:check` | Covers source, tests, host fixture/tooling, Dependabot, and root JSON/config files. |
 | Lint | `npm run lint` | Applies Obsidian and TypeScript rules. |
 | Production build | `npm run build` | Type-checks, then creates the minified local `main.js`. |
@@ -119,18 +121,19 @@ Residual manual checks are limited to real screen-reader speech, OS-level window
 
 ## Release flow
 
-Semantic Release runs after the Node.js build workflow succeeds on `main` or `master`.
+Releases use a committed-snapshot boundary: the local release operation selects and prepares the exact version, while a pushed annotated tag triggers publication. `CHANGELOG.md` is the sole release-note authority. Tags are the bare version (`2.1.0`, not `v2.1.0`), so SemVer planning must enumerate reachable unprefixed tags instead of treating the repository as a first release.
 
-- Conventional commits determine the version and release notes.
-- The Conventional Commits preset is version-pinned and contract-tested; update it only after reproducing fix, feature, and breaking-note output.
-- `.releaserc.yml` synchronizes `manifest.json`, `package.json`, `package-lock.json`, `src/version.ts`, and `versions.json`.
-- Generated version metadata must pass `npm run fmt:check` before publishing continues.
-- Tags have no leading `v`.
-- GitHub release assets are `main.js`, `manifest.json`, and `styles.css`.
-- Successful releases generate SLSA provenance attestations for all three assets.
-- Never commit the generated bundle or manually change published identifiers.
+Only run this flow after the user explicitly requests a release:
 
-Do not manually reproduce only part of the release flow. If release automation changes, update the workflow, `.releaserc.yml`, and this section together.
+1. Fetch remote tags, require a clean attached `master`, and select the exact next version from Conventional Commit subjects and bodies. Apply the repository's unprefixed-tag rule when using a generic SemVer release procedure.
+2. Create a `chore/release-<version>` worktree from `master` with `.agents/tools/worktree.sh new ... --trunk master`.
+3. Preview and apply `npm run release:bump -- <version> --dry-run`, then `npm run release:bump -- <version>`. The command uses `npm version --no-git-tag-version --ignore-scripts` for `package.json` and `package-lock.json`, then synchronizes `manifest.json`, `src/version.ts`, and `versions.json`. It rolls those files back if synchronization fails.
+4. Prepend exactly one dated `## [<exact-tag>]... (YYYY-MM-DD)` section to `CHANGELOG.md`. The complete unprefixed tag must match exactly and the date must be calendar-valid. Missing, malformed, duplicate, tag-mismatched, or empty sections are rejected; heading-like examples inside fenced code blocks are ignored.
+5. Run `npm run release:verify -- <version>` and the full CI gate. Stage only `CHANGELOG.md` and the five version files, run `git diff --cached --check`, and create `release: <version>` plus an annotated `<version>` tag. Never move an existing tag.
+6. Run the worktree helper's `done --trunk master` path so the release commit is merged and `master` is pushed first. Then push the tag without force.
+7. Observe the tag-triggered Release workflow through completion. It requires an annotated tag whose commit is reachable from `origin/master`, revalidates the version mirrors and newest Changelog section, runs formatting/lint/tests/build, publishes or repairs the GitHub Release, uploads `main.js`, `manifest.json`, and `styles.css`, and attests all three assets. The workflow verifies the published body and asset names before reporting success.
+
+The workflow is retry-safe for a partially created Release: after complete validation it atomically writes notes from the tagged Changelog, then rewrites the Release and uploads the three assets with replacement. It never calculates a version, edits repository files, commits, or creates a tag. Do not commit the generated bundle. If release automation changes, update the workflow, scripts, release tests, this section, and the root Agent contract together.
 
 ## Troubleshooting
 

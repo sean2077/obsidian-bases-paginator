@@ -1,3 +1,14 @@
+## [2.0.3](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.2...2.0.3) (2026-07-21)
+
+### Fixes
+
+* remove the redundant product name from the plugin manifest description so community-plugin validation passes
+
+### Release workflow
+
+* replace Semantic Release with a local, Changelog-backed version bump and annotated-tag flow
+* validate the committed release snapshot before CI builds, attests, and publishes its assets
+
 ## [2.0.2](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.1...2.0.2) (2026-07-21)
 
 ### Fixes

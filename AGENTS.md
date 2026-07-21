@@ -11,7 +11,7 @@
 
 - [`README.md`](README.md) owns user-facing behavior, limitations, installation, and usage.
 - [`docs/development.md`](docs/development.md) owns contributor setup, architecture, implementation guidance, manual verification, and release details.
-- `package.json`, `manifest.json`, `.releaserc.yml`, workflows, and source code remain authoritative for executable behavior and current values; do not duplicate volatile versions or option lists here.
+- `package.json`, `manifest.json`, `versions.json`, release scripts, workflows, and source code remain authoritative for executable behavior and current values; `CHANGELOG.md` owns release notes. Do not duplicate volatile versions or option lists here.
 - The repository trunk is `master`; pass `--trunk master` to the scaffold worktree helper where its managed generic default says `main`.
 - Update `README.md` when user-visible behavior changes, update the development guide when contributor workflows or architecture change, and edit this contract only when future Agent behavior must change.
 
@@ -32,8 +32,9 @@
 
 ## Release boundary
 
-- Semantic Release owns version calculation, synchronized version files, tags without a leading `v`, release commits, and GitHub release assets.
-- Do not manually bump versions, create tags, or publish a release unless the user explicitly requests that release workflow.
+- A locally prepared release snapshot owns the exact version, newest `CHANGELOG.md` section, synchronized version files, release commit, and annotated tag. The complete unprefixed tag is the shared identity across those files, CI, and GitHub Release; account for it when a generic SemVer analyzer recognizes only `v`-prefixed tags.
+- Push the release snapshot to `master` before pushing its tag. The tag workflow validates the committed snapshot, extracts that Changelog section, builds and attests `main.js`, `manifest.json`, and `styles.css`, and creates or repairs the matching GitHub Release.
+- Do not bump versions, create or push tags, or publish a release unless the user explicitly requests that release workflow.
 
 <!-- agent-scaffold:start — managed by the agent-scaffold skill. Edit project prose OUTSIDE these markers; `agent-scaffold upgrade` refreshes this block. -->
 ## Agent Harness (Claude Code + Codex)

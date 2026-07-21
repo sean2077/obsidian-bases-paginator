@@ -1,9 +1,9 @@
 {
 	"id": "bases-paginator",
 	"name": "Bases Paginator",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"minAppVersion": "1.12.0",
-	"description": "Adds a group-aware paginated table view to Obsidian Bases.",
+	"description": "Adds a group-aware paginated table view to Bases.",
 	"author": "sean2077",
 	"authorUrl": "https://github.com/sean2077",
 	"isDesktopOnly": false

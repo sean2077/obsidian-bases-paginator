@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-bases-paginator",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"description": "Adds a group-aware paginated table view to Obsidian Bases",
 	"main": "main.js",
 	"type": "module",
@@ -11,10 +11,12 @@
 		"test:host": "node .agents/skills/obsidian-host-test/scripts/verify-host.mjs",
 		"test:host:setup": "node .agents/skills/obsidian-host-test/scripts/setup-fixture.mjs",
 		"test:watch": "vitest",
+		"release:bump": "node scripts/release/bump.mjs",
+		"release:verify": "node scripts/release/verify.mjs",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"fmt": "prettier --write \"{src,tests}/**/*.ts\" \"tests/fixtures/**/*.json\" \".agents/skills/**/*.{mjs,mts}\" \".github/dependabot.yml\" \"*.{json,mts}\"",
-		"fmt:check": "prettier --check \"{src,tests}/**/*.ts\" \"tests/fixtures/**/*.json\" \".agents/skills/**/*.{mjs,mts}\" \".github/dependabot.yml\" \"*.{json,mts}\""
+		"fmt": "prettier --write \"{src,tests}/**/*.ts\" \"tests/fixtures/**/*.json\" \"{.agents/skills,scripts}/**/*.{mjs,mts}\" \".github/{dependabot.yml,workflows/*.yml}\" \"*.{json,mts}\"",
+		"fmt:check": "prettier --check \"{src,tests}/**/*.ts\" \"tests/fixtures/**/*.json\" \"{.agents/skills,scripts}/**/*.{mjs,mts}\" \".github/{dependabot.yml,workflows/*.yml}\" \"*.{json,mts}\""
 	},
 	"keywords": [],
 	"author": "sean2077",
