@@ -10,7 +10,7 @@ CI verifies current Node.js 20 and 22 releases. Use npm and the checked-in lockf
 |---|---|---|
 | Clean dependency install | `npm ci` | Required before final verification. |
 | Intentional dependency change | `npm install` | Review the matching lockfile diff and audit output. |
-| Automated tests | `npm test` | Runs service, compatibility, rendering, and DOM interaction tests. |
+| Automated tests | `npm test` | Runs service, compatibility, rendering, DOM interaction, and release-contract tests. |
 | Prepare host fixture | `npm run test:host:setup -- --target <absolute-test-vault> [--adopt]` | Idempotently writes only the tracked scenario fixture to an explicitly named disposable vault. |
 | Obsidian host gate | `npm run test:host -- --vault <test-vault> --scenarios tests/fixtures/host-vault/scenarios.json` | Builds, deploys, and verifies the tracked matrix in a running Obsidian app through CLI/CDP. |
 | Test watch mode | `npm run test:watch` | Local iteration only. |
@@ -122,6 +122,7 @@ Residual manual checks are limited to real screen-reader speech, OS-level window
 Semantic Release runs after the Node.js build workflow succeeds on `main` or `master`.
 
 - Conventional commits determine the version and release notes.
+- The Conventional Commits preset is version-pinned and contract-tested; update it only after reproducing fix, feature, and breaking-note output.
 - `.releaserc.yml` synchronizes `manifest.json`, `package.json`, `package-lock.json`, `src/version.ts`, and `versions.json`.
 - Generated version metadata must pass `npm run fmt:check` before publishing continues.
 - Tags have no leading `v`.

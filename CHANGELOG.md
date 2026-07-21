@@ -1,6 +1,18 @@
 ## [2.0.1](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.0...2.0.1) (2026-07-21)
 
+### Fixes
+
+* **release:** keep generated metadata formatted ([6468589](https://github.com/sean2077/obsidian-bases-paginator/commit/6468589180b3b67ad84c328d01203577510751b4))
+
 ## [2.0.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.5.0...2.0.0) (2026-07-21)
+
+### ⚠ BREAKING CHANGES
+
+* **release:** Bases Paginator now focuses on group-aware pagination and delegates search, filters, sorting, property order, summaries, copy/export, and selection to native Bases. Legacy view-option keys remain loadable but no longer affect rendering.
+
+### Build System
+
+* **release:** harden v2 publication ([9585c0e](https://github.com/sean2077/obsidian-bases-paginator/commit/9585c0ebe2166ba7448c92612a21d348a7e39911))
 
 ## [1.5.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.3...1.5.0) (2026-03-20)
 
