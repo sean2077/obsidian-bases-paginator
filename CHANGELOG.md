@@ -1,3 +1,9 @@
+## [2.0.5](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.4...2.0.5) (2026-07-21)
+
+### Fixes
+
+* **settings:** expose plugin settings to Obsidian 1.13+ search while preserving the 1.12 settings tab
+
 ## [2.0.4](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.3...2.0.4) (2026-07-21)
 
 ### Fixes
