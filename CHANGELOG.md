@@ -1,3 +1,5 @@
+## [2.0.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.5.0...2.0.0) (2026-07-21)
+
 ## [1.5.0](https://github.com/sean2077/obsidian-bases-paginator/compare/1.4.3...1.5.0) (2026-03-20)
 
 ### Features
