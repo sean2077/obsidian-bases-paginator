@@ -15,3 +15,14 @@ export class BasesView {
 		this.app = controller.app;
 	}
 }
+
+export class PluginSettingTab {
+	readonly app: unknown;
+	readonly containerEl = document.createElement("div");
+
+	constructor(app: unknown, _plugin: unknown) {
+		this.app = app;
+	}
+}
+
+export class Setting {}

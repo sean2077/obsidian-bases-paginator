@@ -35,7 +35,7 @@ The compatibility decision was reviewed on 2026-07-21 against official channels:
 
 - The public changelog listed Obsidian 1.12.7 as public stable. Native Bases search is available in the 1.12 line, so `manifest.json:minAppVersion` is 1.12.0.
 - Obsidian 1.13.2 was Catalyst. The project compiles against current API types as a forward check but does not require 1.13-only behavior.
-- Declarative settings remain deferred while 1.13 is not the public baseline. The targeted lint rule is disabled only for `src/settings.ts`; revisit it after the minimum app version reaches a public release that supports the API.
+- The settings tab returns declarative definitions for search and rendering on 1.13+, while retaining `display()` as the 1.12 fallback. This dual path adds settings search without raising the minimum app version.
 - `BasesQueryResult.data` and `groupedData` already have native filters, sort, and result limit applied. Pagination cannot expose entries removed by that limit.
 
 Recheck the [Obsidian changelog](https://obsidian.md/changelog/), [Bases view help](https://help.obsidian.md/bases/views), [table help](https://help.obsidian.md/bases/views/table), and [custom Bases view guide](https://docs.obsidian.md/plugins/guides/bases-view) before changing this boundary.
@@ -45,6 +45,7 @@ Recheck the [Obsidian changelog](https://obsidian.md/changelog/), [Bases view he
 | Path | Responsibility |
 |---|---|
 | `src/main.ts` | Plugin lifecycle, Bases registration, settings persistence, and settings-tab registration. |
+| `src/settings.ts` | Searchable 1.13+ setting definitions and the equivalent 1.12 imperative fallback. |
 | `src/views/PaginatedTableView.ts` | Adapts native grouped results and coordinates layout and rendering. |
 | `src/views/viewOptions.ts` | Exposes only pagination-specific per-view options. |
 | `src/services/Paginator.ts` | Returns page state and a bounded group-preserving slice through one interface. |
@@ -74,7 +75,7 @@ npm test
 npm run build
 ```
 
-Tests use Vitest and jsdom with a narrow Obsidian API double. They cover the paginator interface, malformed and legacy settings, false/zero value handling, native value-render delegation, modifier-aware file links, bounded reusable DOM rows, accessible control names, keyboard page-size input, and a 10,000-entry bounded-page case.
+Tests use Vitest and jsdom with a narrow Obsidian API double. They cover the paginator interface, malformed and legacy settings, declarative setting definitions and persistence adapters, false/zero value handling, native value-render delegation, modifier-aware file links, bounded reusable DOM rows, accessible control names, keyboard page-size input, and a 10,000-entry bounded-page case.
 
 The test double does not prove Obsidian lifecycle behavior, CSS layout, native rendering implementations, hover popovers, or mobile WebView behavior. Use the CLI-first host gate below for the real renderer, then perform only its named residual manual checks.
 

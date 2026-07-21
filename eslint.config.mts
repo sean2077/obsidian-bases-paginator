@@ -41,11 +41,6 @@ export default tseslint.config(
 			"obsidianmd/rule-custom-message": "off",
 		},
 	},
-	{
-		// Declarative settings are 1.13-only; public stable compatibility remains 1.12.
-		files: ["src/settings.ts"],
-		rules: { "obsidianmd/settings-tab/prefer-setting-definitions": "off" },
-	},
 	globalIgnores([
 		".oma",
 		".worktrees",
