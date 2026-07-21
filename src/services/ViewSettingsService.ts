@@ -1,6 +1,5 @@
 import type { BasesPaginatorSettings, ViewSettings } from "../types";
-
-const MAX_PAGE_SIZE = 1000;
+import { DEFAULT_PAGE_SIZE, isValidPageSize } from "../utils/pageSize";
 
 export interface ViewConfigSource {
 	get(key: string): unknown;
@@ -20,7 +19,8 @@ export function readViewSettings(config: ViewConfigSource, pluginSettings: Bases
 
 function readPageSize(value: unknown, fallback: number): number {
 	const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
-	return Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_PAGE_SIZE ? parsed : fallback;
+	if (isValidPageSize(parsed)) return parsed;
+	return isValidPageSize(fallback) ? fallback : DEFAULT_PAGE_SIZE;
 }
 
 function readPosition(value: unknown): "top" | "bottom" {

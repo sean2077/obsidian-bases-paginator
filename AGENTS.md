@@ -12,13 +12,14 @@
 - [`README.md`](README.md) owns user-facing behavior, limitations, installation, and usage.
 - [`docs/development.md`](docs/development.md) owns contributor setup, architecture, implementation guidance, manual verification, and release details.
 - `package.json`, `manifest.json`, `.releaserc.yml`, workflows, and source code remain authoritative for executable behavior and current values; do not duplicate volatile versions or option lists here.
+- The repository trunk is `master`; pass `--trunk master` to the scaffold worktree helper where its managed generic default says `main`.
 - Update `README.md` when user-visible behavior changes, update the development guide when contributor workflows or architecture change, and edit this contract only when future Agent behavior must change.
 
 ## Required workflow
 
 - Use npm and the checked-in lockfile. Use `npm ci` for a clean dependency install; use `npm install` only when intentionally changing dependencies.
 - Before handoff, run `npm run fmt:check`, `npm run lint`, `npm test`, and `npm run build`; these match the repository's CI gate.
-- UI or data-flow changes also require the relevant independent test-vault checks in the development guide; automated tests do not replace Obsidian runtime verification.
+- UI or data-flow changes also require the CLI-first disposable-vault gate and any residual manual checks in the development guide; automated tests do not replace Obsidian runtime verification.
 - Never commit `node_modules/`, generated `main.js`, or sourcemaps. Keep `manifest.json` and `styles.css` at the repository root because releases attach them directly.
 
 ## Engineering invariants

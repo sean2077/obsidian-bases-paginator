@@ -1,6 +1,6 @@
 import { Keymap } from "obsidian";
 import type { App, BasesEntry, BasesPropertyId, HoverParent, RenderContext, Value } from "obsidian";
-import type { EntryGroup } from "../services/GroupedPaginationService";
+import type { EntryGroup } from "../services/Paginator";
 import { CSS_CLASSES } from "../utils/constants";
 import { isEmptyValue } from "../utils/helpers";
 
@@ -47,7 +47,7 @@ export class TableRenderer {
 		if (entryCount === 0) {
 			this.tableEl.hide();
 			this.emptyEl.show();
-			this.hideUnusedRows();
+			this.trimUnusedRows();
 			return;
 		}
 
@@ -57,7 +57,7 @@ export class TableRenderer {
 			if (group.showHeader) this.renderGroupHeader(group.key, properties.length);
 			for (const entry of group.entries) this.renderEntry(entry, properties);
 		}
-		this.hideUnusedRows();
+		this.trimUnusedRows();
 	}
 
 	private updateHeader(properties: BasesPropertyId[]): void {
@@ -68,7 +68,7 @@ export class TableRenderer {
 		for (const propertyId of properties) {
 			row.createEl("th", {
 				cls: CSS_CLASSES.tableHeader,
-				text: this.getDisplayName(propertyId),
+				text: this.resolveDisplayName(propertyId),
 				attr: { scope: "col" },
 			});
 		}
@@ -129,10 +129,9 @@ export class TableRenderer {
 		return row;
 	}
 
-	private hideUnusedRows(): void {
-		for (let index = this.nextRowIndex; index < this.rows.length; index++) {
-			this.rows[index]?.hide();
-		}
+	private trimUnusedRows(): void {
+		const unusedRows = this.rows.splice(this.nextRowIndex);
+		for (const row of unusedRows) row.remove();
 	}
 
 	private renderFileLink(cell: HTMLElement, entry: BasesEntry): void {
@@ -157,10 +156,6 @@ export class TableRenderer {
 				targetEl: link,
 			});
 		});
-	}
-
-	private getDisplayName(propertyId: BasesPropertyId): string {
-		return this.resolveDisplayName(propertyId);
 	}
 }
 

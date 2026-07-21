@@ -10,8 +10,7 @@ import {
 } from "obsidian";
 import { PaginationBar } from "../components/PaginationBar";
 import { TableRenderer } from "../components/TableRenderer";
-import { PaginationService } from "../services/PaginationService";
-import { countGroupedEntries, getGroupedPage, type EntryGroup } from "../services/GroupedPaginationService";
+import { Paginator, type EntryGroup, type PaginationRequest } from "../services/Paginator";
 import { readViewSettings } from "../services/ViewSettingsService";
 import type { BasesPaginatorSettings, ViewSettings } from "../types";
 import { CSS_CLASSES, VIEW_TYPE } from "../utils/constants";
@@ -23,7 +22,7 @@ export class PaginatedTableView extends BasesView implements HoverParent {
 
 	private readonly tableRenderer: TableRenderer;
 	private readonly paginationBar: PaginationBar;
-	private readonly paginationService: PaginationService;
+	private readonly paginator: Paginator;
 	private readonly paginationEl: HTMLElement;
 	private settings: ViewSettings | null = null;
 
@@ -37,7 +36,7 @@ export class PaginatedTableView extends BasesView implements HoverParent {
 		this.paginationEl = containerEl.createDiv();
 		const tableEl = containerEl.createDiv();
 
-		this.paginationService = new PaginationService();
+		this.paginator = new Paginator();
 		this.tableRenderer = new TableRenderer(
 			this.app,
 			tableEl,
@@ -49,36 +48,28 @@ export class PaginatedTableView extends BasesView implements HoverParent {
 			}
 		);
 		this.paginationBar = new PaginationBar(this.paginationEl, {
-			onPageChange: (page) => {
-				if (this.paginationService.goToPage(page)) this.renderData();
-			},
+			onPageChange: (page) => this.renderData({ page }),
 			onPageSizeChange: (size) => {
 				this.config.set("pageSize", String(size));
-				if (this.paginationService.setPageSize(size)) this.renderData();
+				this.renderData({ pageSize: size });
 			},
 		});
 	}
 
 	onDataUpdated(): void {
-		const previousPageSize = this.settings?.pageSize;
 		this.settings = readViewSettings(this.config, this.getPluginSettings());
 		this.updateLayout(this.settings.paginationPosition);
 		this.tableRenderer.updateOptions({ stickyHeader: this.settings.stickyHeader });
-		if (previousPageSize !== this.settings.pageSize) {
-			this.paginationService.setPageSize(this.settings.pageSize);
-		}
-		this.renderData();
+		this.renderData({ pageSize: this.settings.pageSize });
 	}
 
-	private renderData(): void {
+	private renderData(request: PaginationRequest = {}): void {
 		if (!this.settings || !this.data) return;
 		const groups = this.getGroups();
 		const properties = this.getVisibleProperties();
-		this.paginationService.setTotalItems(countGroupedEntries(groups));
-		const state = this.paginationService.getState();
-		this.tableRenderer.update(getGroupedPage(groups, state.currentPage, state.pageSize), properties);
-
-		this.paginationBar.update(state.currentPage, state.totalPages, state.totalItems, state.pageSize);
+		const page = this.paginator.paginate(groups, request);
+		this.tableRenderer.update(page.groups, properties);
+		this.paginationBar.update(page.state);
 	}
 
 	private getGroups(): EntryGroup<BasesEntry, Value>[] {

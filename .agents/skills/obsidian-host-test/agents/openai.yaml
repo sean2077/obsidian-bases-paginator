@@ -1,0 +1,4 @@
+interface:
+  display_name: "Obsidian Host Test"
+  short_description: "Verify this plugin in a disposable Obsidian vault"
+  default_prompt: "Use $obsidian-host-test to verify this plugin in a disposable Obsidian vault."
