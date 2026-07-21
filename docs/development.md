@@ -1,98 +1,123 @@
 # Development guide
 
-This page is the canonical contributor guide for Bases Paginator. The executable configuration and source code win if this guide drifts; repair the guide in the same change.
+This is the canonical contributor guide for Bases Paginator. Executable configuration and source code win if this page drifts; repair the page in the same change.
 
 ## Environment and commands
 
-Use a current Node.js LTS release and npm. The repository lockfile is required.
+CI verifies current Node.js 20 and 22 releases. Use npm and the checked-in lockfile.
 
 | Task | Command | Notes |
 |---|---|---|
-| Clean dependency install | `npm ci` | Reproduces `package-lock.json`; do not install ESLint globally. |
-| Intentional dependency change | `npm install <package>` | Review and commit the matching lockfile change. |
-| Development watch build | `npm run dev` | Writes the ignored `main.js` bundle with inline sourcemaps. |
-| Formatting check | `npm run fmt:check` | Checks TypeScript under `src/`. |
-| Lint | `npm run lint` | Uses the repository ESLint configuration. |
-| Production build | `npm run build` | Runs TypeScript checking, then creates the minified release bundle. |
+| Clean dependency install | `npm ci` | Required before final verification. |
+| Intentional dependency change | `npm install` | Review the matching lockfile diff and audit output. |
+| Automated tests | `npm test` | Runs service, compatibility, rendering, and DOM interaction tests. |
+| Test watch mode | `npm run test:watch` | Local iteration only. |
+| Formatting check | `npm run fmt:check` | Covers source, tests, and root JSON/config files. |
+| Lint | `npm run lint` | Applies Obsidian and TypeScript rules. |
+| Production build | `npm run build` | Type-checks, then creates the minified local `main.js`. |
+| Development watch | `npm run dev` | Rebuilds the ignored local bundle. |
 
-The plugin loads from top-level `main.js`, `manifest.json`, and `styles.css`. `main.js` is generated locally and attached to releases; it is not committed.
+`main.js` is generated and attached to releases but never committed. `manifest.json` and `styles.css` remain at the repository root because releases attach them directly.
+
+## Product and compatibility boundary
+
+The plugin contributes one missing capability: page navigation over the result set supplied to a custom Bases view. It is local, offline, read-only, and browser-compatible.
+
+| Native Bases owns | This plugin owns |
+|---|---|
+| Search, typed filters, named views, sort, grouping configuration, property order/width, result limit, summaries, selection, copy/export | Page state, page size, group-preserving page slices, a bounded read-only table, accessible page controls |
+
+The compatibility decision was reviewed on 2026-07-21 against official channels:
+
+- The public changelog listed Obsidian 1.12.7 as public stable. Native Bases search is available in the 1.12 line, so `manifest.json:minAppVersion` is 1.12.0.
+- Obsidian 1.13.2 was Catalyst. The project compiles against current API types as a forward check but does not require 1.13-only behavior.
+- Declarative settings remain deferred while 1.13 is not the public baseline. The targeted lint rule is disabled only for `src/settings.ts`; revisit it after the minimum app version reaches a public release that supports the API.
+- `BasesQueryResult.data` and `groupedData` already have native filters, sort, and result limit applied. Pagination cannot expose entries removed by that limit.
+
+Recheck the [Obsidian changelog](https://obsidian.md/changelog/), [Bases view help](https://help.obsidian.md/bases/views), [table help](https://help.obsidian.md/bases/views/table), and [custom Bases view guide](https://docs.obsidian.md/plugins/guides/bases-view) before changing this boundary.
 
 ## Architecture
 
-The plugin registers one custom Bases view and performs filtering, sorting, pagination, and rendering in the client.
-
 | Path | Responsibility |
 |---|---|
-| `src/main.ts` | Plugin lifecycle, view registration, and plugin settings persistence. |
-| `src/views/PaginatedTableView.ts` | Coordinates Bases data, view configuration, services, components, and render updates. |
-| `src/views/viewOptions.ts` | Defines persisted Bases view-option keys and defaults. |
-| `src/components/` | Owns DOM rendering and user interaction for the table, filters, presets, search, and pagination. |
-| `src/services/` | Owns pagination and filtering state transformations without plugin lifecycle concerns. |
-| `src/utils/` and `src/types.ts` | Own shared constants, value conversion, comparison helpers, and types. |
-| `src/settings.ts` | Owns plugin-wide defaults and the Obsidian settings tab. |
-| `styles.css` | Owns the plugin's shipped styling. |
+| `src/main.ts` | Plugin lifecycle, Bases registration, settings persistence, and settings-tab registration. |
+| `src/views/PaginatedTableView.ts` | Coordinates native grouped results, page state, layout, and components. |
+| `src/views/viewOptions.ts` | Exposes only pagination-specific per-view options. |
+| `src/services/PaginationService.ts` | Owns page bounds and state without rendering callbacks. |
+| `src/services/GroupedPaginationService.ts` | Produces a bounded global page while preserving group boundaries. |
+| `src/services/SettingsService.ts` | Validates plugin `data.json`, including the legacy shape. |
+| `src/services/ViewSettingsService.ts` | Validates current view values and harmlessly ignores legacy keys. |
+| `src/components/TableRenderer.ts` | Reuses table DOM and delegates each non-file value to `Value.renderTo`. |
+| `src/components/PaginationBar.ts` | Owns accessible page and page-size controls. |
+| `src/utils/` and `src/types.ts` | Stable identifiers, CSS names, small value/page helpers, and shared contracts. |
 
-There are two persistence boundaries:
+Keep the two rendering roles distinct: pass `app.renderContext` to `Value.renderTo`, because native values call its link/tag renderers at runtime; use the current `PaginatedTableView` as the `hoverParent` for custom file-link previews.
 
-- Plugin-wide defaults use `loadData()` and `saveData()`.
-- Per-view options and filter presets use the Bases view configuration.
+There are two allowed write boundaries:
 
-The table is intentionally read-only. Configuration writes are allowed; vault entry mutation is not.
+- Plugin defaults use `loadData()` and `saveData()`.
+- Current per-view pagination options use `BasesViewConfig.set()`.
 
-## Implementation rules
+The plugin must not modify note content, frontmatter, `.base` filters, native sort/group settings, or other vault entries. Legacy custom-view keys are read as unknown extra data and left untouched.
 
-- Keep `manifest.json:id` and the `VIEW_TYPE` value stable. Treat view-option keys and serialized preset fields as persisted APIs.
-- Bundle runtime dependencies into `main.js`; keep Obsidian and its declared externals external as configured in `esbuild.config.mjs`.
-- Preserve `isDesktopOnly: false`: use browser-compatible APIs and verify mobile-sensitive changes where feasible.
-- Do not add network calls, telemetry, remote code, or transmission of vault content without an explicit feature decision, user opt-in, and README/settings disclosure.
-- Defer heavy work until Bases supplies data. Avoid vault-wide scans and repeated work inside render/update paths.
-- Register plugin-lifecycle events, DOM events, and intervals through Obsidian cleanup helpers. Component-local handlers must be released when their owning DOM is destroyed.
-- Keep UI copy short, sentence case, and aligned with Obsidian terminology.
-- Handle malformed persisted data and unavailable Bases capability without preventing the plugin from unloading cleanly.
+## Automated verification
 
-## Verification
-
-Run the CI-equivalent static gate before handoff:
+Run the full CI gate before handoff:
 
 ```bash
+npm run fmt:check
 npm run lint
+npm test
 npm run build
 ```
 
-`npm run fmt:check` is available for intentional TypeScript formatting work, but formatting is not part of the current CI gate. If it reports untouched files, do not fold a repository-wide reformat into an unrelated change.
+Tests use Vitest and jsdom with a narrow Obsidian API double. They cover pure page/group transformations, malformed and legacy settings, false/zero value handling, native value-render delegation, modifier-aware file links, reusable DOM rows, accessible control names, keyboard page-size input, and a 10,000-entry bounded-page case.
 
-For user-visible or data-flow changes, manually copy `main.js`, `manifest.json`, and `styles.css` to `<Vault>/.obsidian/plugins/bases-paginator/`, reload Obsidian, and verify the affected paths. Select from this matrix according to the change:
+The test double does not prove Obsidian lifecycle behavior, CSS layout, native rendering implementations, hover popovers, or mobile WebView behavior. Those remain manual gates.
 
-- Enable and disable the plugin with the Bases core plugin both available and unavailable.
-- Open a `.base` file and an embedded Base view.
-- Exercise empty, single-page, and multi-page datasets.
-- Exercise global search, quick filters, column filters, sorting, page-size changes, and preset save/update/delete.
-- Check null, numeric, date, link, tag, and multi-value cells when filtering or rendering changes.
-- Confirm plugin defaults survive reload and per-view options remain scoped to the view.
-- Confirm unload/reload does not duplicate UI, listeners, or state.
-- Check iOS or Android when changing browser compatibility, layout, touch interaction, or memory behavior.
+After dependency changes, also run:
+
+```bash
+npm audit
+npm outdated
+```
+
+Major-version differences in `npm outdated` are not automatic upgrade instructions. Keep the toolchain on versions supported together by the current Obsidian sample/plugin guidance and CI Node matrix.
+
+## Manual Obsidian test-vault gate
+
+Never develop or run these checks in a primary vault. Use an independent disposable test vault with Bases enabled, then copy `main.js`, `manifest.json`, and `styles.css` into `.obsidian/plugins/bases-paginator/`.
+
+Required matrix for user-visible or data-flow changes:
+
+1. Enable, disable, reload, and re-enable the plugin; confirm there is one view registration and no duplicated controls or console errors.
+2. Open both a `.base` file and an embedded named view. Confirm empty, one-row, one-page, exact-boundary, and multi-page data.
+3. Test page sizes 10/25/50/100 and custom values 1, 37, 1,000; reject 0, negative, non-numeric, and values over 1,000.
+4. Apply native search, typed filters, multi-sort, property order, and grouping. Confirm the paginated result keeps native order and repeats the correct group heading when a group spans pages.
+5. Set a restrictive native result limit, confirm the documented truncated total, then remove/raise it and confirm all filtered entries become pageable.
+6. Include null, empty, `0`, `false`, number, date, formula, tag, link, alias, list-with-commas, image, and error values. Confirm native rendering and no uncaught exception.
+7. Activate links with plain click, modifier-click, middle-click, and hover preview. Confirm the expected workspace target and no vault writes.
+8. Change plugin defaults and per-view options, reload, and confirm scope/persistence. Open a legacy `.base` containing retired keys and malformed legacy preset text; confirm it renders and the file is not rewritten.
+9. Test keyboard-only navigation, focus visibility, screen-reader names/status, light/dark themes, a narrow desktop pane, and an iOS or Android device/emulator.
+10. Compare test-vault note/frontmatter contents before and after the run; only plugin settings or explicitly changed view pagination options may differ.
+
+Record the Obsidian version/channel, platform, vault fixture, observed result, and any console warning. Do not claim this gate from automated tests alone.
 
 ## Release flow
 
-Releases are automated by Semantic Release after the build workflow succeeds on `main` or `master`.
+Semantic Release runs after the Node.js build workflow succeeds on `main` or `master`.
 
-- Conventional commit types drive version selection and release notes.
+- Conventional commits determine the version and release notes.
 - `.releaserc.yml` synchronizes `manifest.json`, `package.json`, `package-lock.json`, `src/version.ts`, and `versions.json`.
-- Tags match the semantic version exactly and do not use a leading `v`.
+- Tags have no leading `v`.
 - GitHub release assets are `main.js`, `manifest.json`, and `styles.css`.
-- Never change the published plugin ID.
-- Do not commit the generated bundle; the release workflow builds and uploads it.
+- Never commit the generated bundle or manually change published identifiers.
 
-Do not manually reproduce part of this flow. If release automation changes, update `.releaserc.yml`, the workflow, and this section together.
+Do not manually reproduce only part of the release flow. If release automation changes, update the workflow, `.releaserc.yml`, and this section together.
 
-## Troubleshooting and references
+## Troubleshooting
 
-- Missing `main.js`: run `npm run build` and confirm the artifact is at the plugin root.
-- Missing view: confirm the installed Obsidian version satisfies `manifest.json:minAppVersion` and the Bases core plugin is enabled.
-- Stale UI or settings: reload Obsidian, then verify whether the value belongs to plugin data or per-view Bases configuration.
-
-Canonical external requirements:
-
-- [Obsidian plugin guidelines](https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines)
-- [Obsidian developer policies](https://docs.obsidian.md/Developer+policies)
-- [Obsidian style guide](https://help.obsidian.md/style-guide)
+- Missing `main.js`: run `npm run build` and confirm it exists at the plugin root.
+- Missing view: check `manifest.json:minAppVersion` and enable the Bases core plugin.
+- Fewer pageable rows than expected: inspect the native filters and result limit first.
+- Stale page size: distinguish the plugin-wide default from the per-view `pageSize` value.

@@ -1,245 +1,166 @@
-import { setIcon } from 'obsidian';
-import type { PaginationBarOptions } from '../types';
-import { CSS_CLASSES, PAGE_SIZE_OPTIONS } from '../utils/constants';
+import { setIcon } from "obsidian";
+import type { PaginationBarOptions } from "../types";
+import { CSS_CLASSES, PAGE_SIZE_OPTIONS } from "../utils/constants";
 
-/**
- * Pagination controls component
- */
+const MAX_PAGE_SIZE = 1000;
+
 export class PaginationBar {
-	private containerEl: HTMLElement;
+	private readonly firstButton: HTMLButtonElement;
+	private readonly previousButton: HTMLButtonElement;
+	private readonly nextButton: HTMLButtonElement;
+	private readonly lastButton: HTMLButtonElement;
+	private readonly pageInfo: HTMLSpanElement;
+	private readonly itemInfo: HTMLSpanElement;
+	private readonly pageSizeSelect: HTMLSelectElement;
+	private readonly customPageSizeInput: HTMLInputElement;
+	private readonly customPageSizeError: HTMLSpanElement;
+	private currentPage = 1;
+	private totalPages = 1;
+	private totalItems = 0;
+	private pageSize = 25;
 
-	private firstBtn: HTMLButtonElement;
-	private prev10Btn: HTMLButtonElement;
-	private prevBtn: HTMLButtonElement;
-	private pageInfo: HTMLSpanElement;
-	private nextBtn: HTMLButtonElement;
-	private next10Btn: HTMLButtonElement;
-	private lastBtn: HTMLButtonElement;
-	private itemInfo: HTMLSpanElement;
-	private pageSizeSelect: HTMLSelectElement;
-	private customPageSizeInput: HTMLInputElement | null = null;
+	constructor(
+		containerEl: HTMLElement,
+		private readonly options: PaginationBarOptions
+	) {
+		containerEl.addClass(CSS_CLASSES.paginationBar);
 
-	private currentPage: number = 1;
-	private totalPages: number = 1;
-	private totalItems: number = 0;
-	private pageSize: number = 25;
-
-	private onPageChange: (page: number) => void;
-	private onPageSizeChange: (size: number) => void;
-
-	constructor(containerEl: HTMLElement, options: PaginationBarOptions) {
-		this.containerEl = containerEl;
-		this.onPageChange = options.onPageChange;
-		this.onPageSizeChange = options.onPageSizeChange;
-
-		this.containerEl.addClass(CSS_CLASSES.paginationBar);
-
-		// Page size selector
-		const pageSizeContainer = this.containerEl.createDiv(CSS_CLASSES.pageSizeSelector);
-		pageSizeContainer.createEl('span', { text: 'Show: ' });
-
-		this.pageSizeSelect = pageSizeContainer.createEl('select');
+		const sizeContainer = containerEl.createDiv(CSS_CLASSES.pageSizeSelector);
+		const sizeLabel = sizeContainer.createEl("label", { text: "Items per page " });
+		this.pageSizeSelect = sizeLabel.createEl("select", {
+			attr: { "aria-label": "Items per page" },
+		});
 		for (const option of PAGE_SIZE_OPTIONS) {
-			this.pageSizeSelect.createEl('option', {
+			this.pageSizeSelect.createEl("option", {
 				value: String(option.value),
 				text: option.label,
 			});
 		}
 		this.pageSizeSelect.value = String(this.pageSize);
-		this.pageSizeSelect.addEventListener('change', () => {
-			this.handlePageSizeChange();
+		this.pageSizeSelect.addEventListener("change", () => this.handlePageSizeSelection());
+
+		this.customPageSizeInput = sizeLabel.createEl("input", {
+			type: "number",
+			cls: CSS_CLASSES.customPageSizeInput,
+			attr: {
+				"aria-label": "Custom items per page",
+				inputmode: "numeric",
+				max: String(MAX_PAGE_SIZE),
+				min: "1",
+				step: "1",
+			},
+		});
+		this.customPageSizeInput.hidden = true;
+		this.customPageSizeError = sizeLabel.createSpan({
+			cls: CSS_CLASSES.customPageSizeError,
+			text: "Enter 1–1,000.",
+			attr: { role: "alert" },
+		});
+		this.customPageSizeError.hidden = true;
+		this.customPageSizeInput.addEventListener("change", () => this.applyCustomPageSize());
+		this.customPageSizeInput.addEventListener("keydown", (event) => {
+			if (event.key === "Enter") this.applyCustomPageSize();
+			if (event.key === "Escape") this.customPageSizeInput.blur();
 		});
 
-		// Navigation buttons
-		const navContainer = this.containerEl.createDiv({ cls: CSS_CLASSES.navContainer });
-
-		// First page button
-		this.firstBtn = navContainer.createEl('button', {
-			cls: CSS_CLASSES.paginationBtn,
-			attr: { title: 'First page' },
-		});
-		setIcon(this.firstBtn, 'chevrons-left');
-		this.firstBtn.addEventListener('click', () => this.goToPage(1));
-
-		// Previous 10 pages button
-		this.prev10Btn = navContainer.createEl('button', {
-			cls: CSS_CLASSES.paginationBtn,
-			attr: { title: 'Previous 10 pages' },
-		});
-		this.prev10Btn.setText('-10');
-		this.prev10Btn.addEventListener('click', () => this.goToPage(this.currentPage - 10));
-
-		// Previous page button
-		this.prevBtn = navContainer.createEl('button', {
-			cls: CSS_CLASSES.paginationBtn,
-			attr: { title: 'Previous page' },
-		});
-		setIcon(this.prevBtn, 'chevron-left');
-		this.prevBtn.addEventListener('click', () => this.goToPage(this.currentPage - 1));
-
-		// Page indicator
-		this.pageInfo = navContainer.createEl('span', {
+		const navigation = containerEl.createDiv({ cls: CSS_CLASSES.navContainer });
+		this.firstButton = this.createButton(navigation, "First page", "chevrons-left", () => 1);
+		this.previousButton = this.createButton(
+			navigation,
+			"Previous page",
+			"chevron-left",
+			() => this.currentPage - 1
+		);
+		this.pageInfo = navigation.createSpan({
 			cls: CSS_CLASSES.pageInfo,
+			attr: { "aria-atomic": "true", "aria-live": "polite", role: "status" },
 		});
-
-		// Next page button
-		this.nextBtn = navContainer.createEl('button', {
-			cls: CSS_CLASSES.paginationBtn,
-			attr: { title: 'Next page' },
-		});
-		setIcon(this.nextBtn, 'chevron-right');
-		this.nextBtn.addEventListener('click', () => this.goToPage(this.currentPage + 1));
-
-		// Next 10 pages button
-		this.next10Btn = navContainer.createEl('button', {
-			cls: CSS_CLASSES.paginationBtn,
-			attr: { title: 'Next 10 pages' },
-		});
-		this.next10Btn.setText('+10');
-		this.next10Btn.addEventListener('click', () => this.goToPage(this.currentPage + 10));
-
-		// Last page button
-		this.lastBtn = navContainer.createEl('button', {
-			cls: CSS_CLASSES.paginationBtn,
-			attr: { title: 'Last page' },
-		});
-		setIcon(this.lastBtn, 'chevrons-right');
-		this.lastBtn.addEventListener('click', () => this.goToPage(this.totalPages));
-
-		// Item count info
-		this.itemInfo = this.containerEl.createEl('span', {
-			cls: CSS_CLASSES.itemInfo,
-		});
-
+		this.nextButton = this.createButton(navigation, "Next page", "chevron-right", () => this.currentPage + 1);
+		this.lastButton = this.createButton(navigation, "Last page", "chevrons-right", () => this.totalPages);
+		this.itemInfo = containerEl.createSpan({ cls: CSS_CLASSES.itemInfo });
 		this.render();
 	}
 
-	/**
-	 * Handle page size dropdown change
-	 */
-	private handlePageSizeChange(): void {
-		const value = this.pageSizeSelect.value;
-
-		if (value === 'custom') {
-			this.showCustomPageSizeInput();
-		} else {
-			this.hideCustomPageSizeInput();
-			const size = parseInt(value, 10);
-			if (!isNaN(size) && size > 0) {
-				this.onPageSizeChange(size);
-			}
-		}
-	}
-
-	/**
-	 * Show custom page size input
-	 */
-	private showCustomPageSizeInput(): void {
-		if (this.customPageSizeInput) return;
-
-		const container = this.pageSizeSelect.parentElement!;
-		this.customPageSizeInput = container.createEl('input', {
-			type: 'number',
-			placeholder: 'Enter number',
-			cls: CSS_CLASSES.customPageSizeInput,
-			attr: { min: '1', max: '1000' },
-		});
-
-		const applyCustomSize = (): void => {
-			const size = parseInt(this.customPageSizeInput!.value, 10);
-			if (!isNaN(size) && size > 0) {
-				this.onPageSizeChange(Math.min(size, 1000));
-			}
-		};
-
-		this.customPageSizeInput.addEventListener('change', applyCustomSize);
-
-		this.customPageSizeInput.addEventListener('keydown', (e) => {
-			if (e.key === 'Enter') {
-				applyCustomSize();
-			}
-		});
-
-		this.customPageSizeInput.focus();
-	}
-
-	/**
-	 * Hide custom page size input
-	 */
-	private hideCustomPageSizeInput(): void {
-		if (this.customPageSizeInput) {
-			this.customPageSizeInput.remove();
-			this.customPageSizeInput = null;
-		}
-	}
-
-	/**
-	 * Go to a specific page (clamped to valid range)
-	 */
-	private goToPage(page: number): void {
-		// Clamp to valid range
-		const targetPage = Math.max(1, Math.min(page, this.totalPages));
-		if (targetPage !== this.currentPage) {
-			this.onPageChange(targetPage);
-		}
-	}
-
-	/**
-	 * Render pagination state
-	 */
-	private render(): void {
-		// Update page info
-		this.pageInfo.setText(`Page ${this.currentPage} of ${this.totalPages}`);
-
-		// Update item info
-		if (this.totalItems === 0) {
-			this.itemInfo.setText('No items');
-		} else {
-			const start = (this.currentPage - 1) * this.pageSize + 1;
-			const end = Math.min(this.currentPage * this.pageSize, this.totalItems);
-			this.itemInfo.setText(`Showing ${start}-${end} of ${this.totalItems}`);
-		}
-
-		// Update button states
-		const canGoPrev = this.currentPage > 1;
-		const canGoPrev10 = this.currentPage > 10;
-		const canGoNext = this.currentPage < this.totalPages;
-		const canGoNext10 = this.currentPage + 10 <= this.totalPages;
-
-		this.firstBtn.disabled = !canGoPrev;
-		this.prev10Btn.disabled = !canGoPrev10;
-		this.prevBtn.disabled = !canGoPrev;
-		this.nextBtn.disabled = !canGoNext;
-		this.next10Btn.disabled = !canGoNext10;
-		this.lastBtn.disabled = !canGoNext;
-
-		// Button :disabled pseudo-class is used for styling (see styles.css)
-	}
-
-	/**
-	 * Update pagination state
-	 */
 	update(currentPage: number, totalPages: number, totalItems: number, pageSize: number): void {
 		this.currentPage = currentPage;
 		this.totalPages = totalPages;
 		this.totalItems = totalItems;
 		this.pageSize = pageSize;
+		this.syncPageSizeControls();
+		this.render();
+	}
 
-		// Update page size selector if not custom
-		if (!this.customPageSizeInput) {
-			const matchingOption = PAGE_SIZE_OPTIONS.find(
-				(opt) => typeof opt.value === 'number' && opt.value === pageSize
-			);
-			if (matchingOption) {
-				this.pageSizeSelect.value = String(pageSize);
-			} else {
-				this.pageSizeSelect.value = 'custom';
-				this.showCustomPageSizeInput();
-				// Use non-null assertion since showCustomPageSizeInput creates it
-				this.customPageSizeInput!.value = String(pageSize);
-			}
+	private createButton(
+		container: HTMLElement,
+		label: string,
+		icon: string,
+		getPage: () => number
+	): HTMLButtonElement {
+		const button = container.createEl("button", {
+			cls: CSS_CLASSES.paginationBtn,
+			attr: { "aria-label": label, title: label, type: "button" },
+		});
+		setIcon(button, icon);
+		button.addEventListener("click", () => this.goToPage(getPage()));
+		return button;
+	}
+
+	private handlePageSizeSelection(): void {
+		if (this.pageSizeSelect.value === "custom") {
+			this.customPageSizeInput.hidden = false;
+			this.customPageSizeInput.value = String(this.pageSize);
+			this.customPageSizeInput.focus();
+			return;
 		}
 
-		this.render();
+		this.customPageSizeInput.hidden = true;
+		this.customPageSizeError.hidden = true;
+		const size = Number(this.pageSizeSelect.value);
+		if (Number.isInteger(size) && size > 0) this.options.onPageSizeChange(size);
+	}
+
+	private applyCustomPageSize(): void {
+		const size = Number(this.customPageSizeInput.value);
+		const valid = Number.isInteger(size) && size >= 1 && size <= MAX_PAGE_SIZE;
+		if (!valid) {
+			this.customPageSizeInput.setAttribute("aria-invalid", "true");
+			this.customPageSizeError.hidden = false;
+			return;
+		}
+		this.customPageSizeInput.removeAttribute("aria-invalid");
+		this.customPageSizeError.hidden = true;
+		this.options.onPageSizeChange(size);
+	}
+
+	private syncPageSizeControls(): void {
+		const isStandard = PAGE_SIZE_OPTIONS.some((option) => option.value === this.pageSize);
+		this.pageSizeSelect.value = isStandard ? String(this.pageSize) : "custom";
+		this.customPageSizeInput.hidden = isStandard;
+		if (!isStandard) this.customPageSizeInput.value = String(this.pageSize);
+		this.customPageSizeInput.removeAttribute("aria-invalid");
+		this.customPageSizeError.hidden = true;
+	}
+
+	private goToPage(page: number): void {
+		const target = Math.max(1, Math.min(page, this.totalPages));
+		if (target !== this.currentPage) this.options.onPageChange(target);
+	}
+
+	private render(): void {
+		this.pageInfo.setText(`Page ${this.currentPage} of ${this.totalPages}`);
+		if (this.totalItems === 0) {
+			this.itemInfo.setText("No items");
+		} else {
+			const start = (this.currentPage - 1) * this.pageSize + 1;
+			const end = Math.min(this.currentPage * this.pageSize, this.totalItems);
+			this.itemInfo.setText(`Showing ${start}–${end} of ${this.totalItems}`);
+		}
+
+		const canGoPrevious = this.currentPage > 1;
+		const canGoNext = this.currentPage < this.totalPages;
+		this.firstButton.disabled = !canGoPrevious;
+		this.previousButton.disabled = !canGoPrevious;
+		this.nextButton.disabled = !canGoNext;
+		this.lastButton.disabled = !canGoNext;
 	}
 }

@@ -2,7 +2,7 @@
 
 ## Product boundary
 
-- This is a local, offline Obsidian community plugin that adds a paginated, filterable table view to Bases.
+- This is a local, offline Obsidian community plugin that adds true page navigation to Bases and delegates query controls to native Bases.
 - Preserve the read-only product boundary: view and plugin settings may be persisted, but the plugin must not modify vault entries.
 - Keep desktop and mobile compatibility. Use Obsidian/browser APIs; do not add Node.js, Electron, network, telemetry, or external-service dependencies without explicit approval and disclosure.
 - Treat `manifest.json:id` and `src/utils/constants.ts:VIEW_TYPE` as stable external identifiers. Do not rename them without an explicit migration and release decision.
@@ -17,8 +17,8 @@
 ## Required workflow
 
 - Use npm and the checked-in lockfile. Use `npm ci` for a clean dependency install; use `npm install` only when intentionally changing dependencies.
-- Before handoff, run `npm run lint` and `npm run build`; these match the repository's CI gate.
-- UI or data-flow changes also require the relevant manual Obsidian checks in the development guide; this repository has no automated test suite.
+- Before handoff, run `npm run fmt:check`, `npm run lint`, `npm test`, and `npm run build`; these match the repository's CI gate.
+- UI or data-flow changes also require the relevant independent test-vault checks in the development guide; automated tests do not replace Obsidian runtime verification.
 - Never commit `node_modules/`, generated `main.js`, or sourcemaps. Keep `manifest.json` and `styles.css` at the repository root because releases attach them directly.
 
 ## Engineering invariants
