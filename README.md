@@ -11,6 +11,8 @@ Bases Paginator is a local, read-only Obsidian view that adds real page navigati
 Requires Obsidian 1.12.0 or later with the Bases core plugin enabled. Desktop and mobile are supported.
 On Obsidian 1.13.0 or later, the plugin's pagination settings also appear in Settings search.
 
+![Bases Paginator paginated table](./assets/paginated-table.png)
+
 ## Why this plugin still exists
 
 Native Bases can limit the number of query results, but a result limit does not provide next/previous pages or access to the remaining results. This plugin keeps that narrow missing capability:
