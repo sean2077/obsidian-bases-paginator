@@ -8,6 +8,7 @@ description: "Verify Bases Paginator changes in a real, running Obsidian app thr
 ## Boundary
 
 - Target only an explicitly named disposable vault. Never infer or use the active or primary vault.
+- Keep the Obsidian window in the foreground with restricted mode off for that vault. Hidden or occluded windows drop CDP input and console capture, and restricted mode silently prevents the community plugin from loading; the runner checks both before driving the view.
 - Keep note, frontmatter, Canvas, and `.base` content byte-for-byte unchanged. The runner may replace only this plugin's installed package and Obsidian-owned workspace/plugin settings.
 - Exercise the real plugin view. A successful `base:query` alone does not verify pagination.
 - Prefer CLI DOM, CDP input/accessibility, console capture, and screenshots. Use Computer Use only for OS dialogs or window chrome; leave real screen-reader and physical-device checks manual.
@@ -15,6 +16,7 @@ description: "Verify Bases Paginator changes in a real, running Obsidian app thr
 ## Workflow
 
 1. Run `obsidian help` and confirm the installed CLI exposes the commands checked by the bundled runner, including `base:query`, plugin lifecycle, reload, debug/error capture, DOM, screenshot, mobile, CDP, and eval commands.
+   The tracked matrix requires **Obsidian 1.14.3+** for manual group order and visibility. This is a host-test requirement, not a change to the plugin's minimum supported version. Legacy `--base` smoke checks remain available on older hosts with the required CLI commands.
 2. Run the headless CI gate first: `npm ci`, `npm run fmt:check`, `npm run lint`, `npm test`, and `npm run build`.
 3. Prepare or refresh the tracked fixture only in an explicitly named disposable vault:
 
@@ -35,12 +37,16 @@ description: "Verify Bases Paginator changes in a real, running Obsidian app thr
 
 The bundled runner must prove all of the following before exiting zero:
 
-- The CLI resolved the explicit test vault through its guarded fallbacks, native `base:query` totals matched every tracked scenario, and fixture paths were fully covered where page walks are requested.
+- The CLI resolved the explicit test vault through its guarded fallbacks, native `base:query` results matched the fixture oracle, and visible fixture paths were fully covered where page walks are requested. For manual `groupOrder`, the CLI may expose the full ungrouped query or its visible rows. Display totals and order come from known fixture values and [official group-order semantics](https://help.obsidian.md/bases/syntax), never directly from that CLI count.
 - The packaged plugin survived disable/re-enable and repeated reloads without duplicate active views.
 - Empty, one-row, exact-boundary, limited, grouped, malformed legacy, native-value, custom page-size, and 1,200-row views have bounded rows and coherent status text.
+- Manual group ordering hides unlisted groups, an empty `groupOrder` hides all groups, a null-only group retains its header, and `order: []` does not restore hidden properties.
 - Direct and embedded views, CDP mouse and keyboard transitions, invalid custom input, desktop/390 px mobile renders, and focus visibility passed.
+- Page jumps work through Enter and change events, preserve keyboard focus, reject invalid values without navigating, and expose a named numeric input in the accessibility tree.
 - The accessibility tree exposes named navigation and table landmarks, buttons, combobox, and live status roles.
 - Obsidian captured no errors or error-level console messages.
 - Every vault file outside the Obsidian config directory retained the same content hash.
 
 The runner reports timing and heap data as evidence, not a hard performance budget. It does not prove real NVDA, VoiceOver, or TalkBack speech; OS-level window focus; hover timing outside the renderer; visual quality in every theme; or physical iOS/Android behavior. Execute only the residual checks touched by the change.
+
+Valid page-size changes persist through `BasesViewConfig.set()` and can rewrite the backing `.base` file. The read-only gate therefore uses separate fixed-size fixtures and only invalid page-size input. Vitest integration tests verify preserving the previous first visible item when the page size changes, including a repeated host data callback. If real persistence needs additional acceptance, use a separately disposable vault outside this byte-preserving gate and record that manual check explicitly.

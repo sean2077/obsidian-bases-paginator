@@ -22,9 +22,11 @@ export class PaginatedTableView extends BasesView implements HoverParent {
 
 	private readonly tableRenderer: TableRenderer;
 	private readonly paginationBar: PaginationBar;
-	private readonly paginator: Paginator;
+	private readonly paginator = new Paginator<BasesEntry, Value>();
+	private readonly containerEl: HTMLElement;
 	private readonly paginationEl: HTMLElement;
 	private settings: ViewSettings | null = null;
+	private properties: BasesPropertyId[] = [];
 
 	constructor(
 		controller: QueryController,
@@ -32,11 +34,10 @@ export class PaginatedTableView extends BasesView implements HoverParent {
 		private readonly getPluginSettings: () => BasesPaginatorSettings
 	) {
 		super(controller);
-		containerEl.addClass(CSS_CLASSES.container);
-		this.paginationEl = containerEl.createDiv();
-		const tableEl = containerEl.createDiv();
+		this.containerEl = containerEl.createDiv(CSS_CLASSES.container);
+		this.paginationEl = this.containerEl.createDiv();
+		const tableEl = this.containerEl.createDiv();
 
-		this.paginator = new Paginator();
 		this.tableRenderer = new TableRenderer(
 			this.app,
 			tableEl,
@@ -60,31 +61,37 @@ export class PaginatedTableView extends BasesView implements HoverParent {
 		this.settings = readViewSettings(this.config, this.getPluginSettings());
 		this.updateLayout(this.settings.paginationPosition);
 		this.tableRenderer.updateOptions({ stickyHeader: this.settings.stickyHeader });
+		// Bases replaces its result and entries on every update. Index only this
+		// snapshot, then keep ordinary page navigation independent of query getters.
+		this.paginator.setGroups(this.getGroups());
+		this.properties = this.config.getOrder();
 		this.renderData({ pageSize: this.settings.pageSize });
+	}
+
+	onunload(): void {
+		this.settings = null;
+		this.properties = [];
+		this.paginator.setGroups([]);
+		this.containerEl.remove();
 	}
 
 	private renderData(request: PaginationRequest = {}): void {
 		if (!this.settings || !this.data) return;
-		const groups = this.getGroups();
-		const properties = this.getVisibleProperties();
-		const page = this.paginator.paginate(groups, request);
-		this.tableRenderer.update(page.groups, properties);
+		const page = this.paginator.paginate(request);
+		this.tableRenderer.update(page.groups, this.properties);
 		this.paginationBar.update(page.state);
 	}
 
 	private getGroups(): EntryGroup<BasesEntry, Value>[] {
 		const groups = this.data.groupedData;
-		const showHeaders = groups.length > 1 || groups.some((group) => group.hasKey());
+		// Ungrouped results have an undefined key. A configured group whose rows
+		// lack a value has a NullValue key, even though hasKey() returns false.
+		const showHeaders = groups.length > 1 || groups.some((group) => group.key !== undefined);
 		return groups.map((group) => ({
 			entries: group.entries,
 			key: group.key,
 			showHeader: showHeaders,
 		}));
-	}
-
-	private getVisibleProperties(): BasesPropertyId[] {
-		const order = this.config.getOrder();
-		return order.length > 0 ? order : this.data.properties;
 	}
 
 	private updateLayout(position: "top" | "bottom"): void {

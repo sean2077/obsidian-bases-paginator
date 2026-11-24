@@ -2,7 +2,7 @@ import { Keymap } from "obsidian";
 import type { App, BasesEntry, BasesPropertyId, HoverParent, RenderContext, Value } from "obsidian";
 import type { EntryGroup } from "../services/Paginator";
 import { CSS_CLASSES } from "../utils/constants";
-import { isEmptyValue } from "../utils/helpers";
+import { isEmptyValue } from "../utils/values";
 
 interface TableRendererOptions {
 	hoverParent: HoverParent;
@@ -33,6 +33,11 @@ export class TableRenderer {
 		});
 		this.headerEl = this.tableEl.createEl("thead");
 		this.bodyEl = this.tableEl.createEl("tbody");
+		// Delegate only links owned by this renderer. Native value links keep their
+		// own handlers, and replacing a page cannot leave entry-capturing closures.
+		this.bodyEl.addEventListener("click", (event) => this.openFileLink(event));
+		this.bodyEl.addEventListener("auxclick", (event) => this.openFileLink(event));
+		this.bodyEl.addEventListener("mouseover", (event) => this.previewFileLink(event));
 		this.emptyEl = containerEl.createDiv({ cls: CSS_CLASSES.emptyState, text: "No results" });
 		this.emptyEl.hide();
 	}
@@ -47,8 +52,9 @@ export class TableRenderer {
 		this.nextRowIndex = 0;
 		const entryCount = groups.reduce((total, group) => total + group.entries.length, 0);
 
-		if (entryCount === 0) {
+		if (entryCount === 0 || properties.length === 0) {
 			this.tableEl.hide();
+			this.emptyEl.setText(entryCount === 0 ? "No results" : "No properties selected");
 			this.emptyEl.show();
 			this.trimUnusedRows();
 			return;
@@ -64,7 +70,15 @@ export class TableRenderer {
 	}
 
 	private updateHeader(properties: BasesPropertyId[]): void {
-		if (sameProperties(this.properties, properties)) return;
+		if (sameProperties(this.properties, properties)) {
+			// The host can rename a property without changing its ID or position.
+			for (const [index, propertyId] of properties.entries()) {
+				const cell = this.headerEl.rows[0]?.cells[index];
+				const name = this.resolveDisplayName(propertyId);
+				if (cell && cell.textContent !== name) cell.setText(name);
+			}
+			return;
+		}
 		this.properties = [...properties];
 		this.headerEl.empty();
 		const row = this.headerEl.createEl("tr");
@@ -138,26 +152,39 @@ export class TableRenderer {
 	}
 
 	private renderFileLink(cell: HTMLElement, entry: BasesEntry): void {
-		const link = cell.createEl("a", {
+		cell.createEl("a", {
 			cls: "internal-link",
 			text: entry.file.name,
-			attr: { "data-href": entry.file.path, href: entry.file.path },
+			attr: { "data-bp-file-link": "", "data-href": entry.file.path, href: entry.file.path },
 		});
-		const openLink = (event: MouseEvent): void => {
-			if (event.button !== 0 && event.button !== 1) return;
-			event.preventDefault();
-			void this.app.workspace.openLinkText(entry.file.path, "", Keymap.isModEvent(event));
-		};
-		link.addEventListener("click", openLink);
-		link.addEventListener("auxclick", openLink);
-		link.addEventListener("mouseover", (event) => {
-			this.app.workspace.trigger("hover-link", {
-				event,
-				hoverParent: this.options.hoverParent,
-				linktext: entry.file.path,
-				source: "bases",
-				targetEl: link,
-			});
+	}
+
+	private getFileLink(event: MouseEvent): HTMLAnchorElement | null {
+		// Avoid instanceof Element, which does not work across pop-out windows.
+		const target = event.target as Element | null;
+		if (!target || typeof target.closest !== "function") return null;
+		const link = target.closest<HTMLAnchorElement>("a[data-bp-file-link]");
+		return link && this.bodyEl.contains(link) ? link : null;
+	}
+
+	private openFileLink(event: MouseEvent): void {
+		if (event.button !== 0 && event.button !== 1) return;
+		const path = this.getFileLink(event)?.getAttribute("data-href");
+		if (!path) return;
+		event.preventDefault();
+		void this.app.workspace.openLinkText(path, "", Keymap.isModEvent(event));
+	}
+
+	private previewFileLink(event: MouseEvent): void {
+		const link = this.getFileLink(event);
+		const path = link?.getAttribute("data-href");
+		if (!link || !path) return;
+		this.app.workspace.trigger("hover-link", {
+			event,
+			hoverParent: this.options.hoverParent,
+			linktext: path,
+			source: "bases",
+			targetEl: link,
 		});
 	}
 }

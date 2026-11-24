@@ -14,6 +14,9 @@ export interface FixtureScenario {
 	embed: string;
 	pageSize: number;
 	expectedTotal: number;
+	expectedQueryTotal: number;
+	expectedQueryPaths?: string[];
+	expectedVisiblePaths?: string[];
 	expectedPages: number;
 	[key: string]: unknown;
 }
@@ -21,6 +24,7 @@ export interface FixtureScenario {
 export interface FixtureSpec {
 	version: 1;
 	fixtureId: string;
+	minimumHostVersion: string;
 	sets: FixtureSet[];
 	scenarios: FixtureScenario[];
 }
@@ -39,6 +43,8 @@ export class HostTestError extends Error {
 
 export function buildFixtureFiles(spec: FixtureSpec): Map<string, string>;
 export function parseFixtureSpec(value: unknown): FixtureSpec;
+export function assertHostVersion(output: string, minimum: string): void;
+export function assertFixtureQuery(scenario: FixtureScenario, paths: string[]): void;
 export function parseVaultsVerbose(output: string, vaultName: string): string | undefined;
 export function resolveVaultPath(
 	vaultName: string,

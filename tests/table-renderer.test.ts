@@ -41,6 +41,78 @@ describe("TableRenderer native value rendering", () => {
 		expect(container.textContent).toContain("Alpha, beta · note, one");
 	});
 
+	it("refreshes renamed columns without recreating unchanged headers", () => {
+		const container = document.body.createDiv();
+		let displayName = "Original name";
+		const renderer = new TableRenderer(createApp(), container, () => displayName, {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: true,
+		});
+		renderer.update([], ["note.title"]);
+		const header = container.querySelector("th");
+		expect(header?.textContent).toBe("Original name");
+
+		displayName = "Renamed column";
+		renderer.update([], ["note.title"]);
+		expect(container.querySelector("th")).toBe(header);
+		expect(header?.textContent).toBe("Renamed column");
+	});
+
+	it("renders the literal text null instead of replacing it with an empty-value marker", () => {
+		const container = document.body.createDiv();
+		const renderer = new TableRenderer(createApp(), container, createDisplayName(), {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: false,
+		});
+		const renderTo = vi.fn((element: HTMLElement) => element.setText("null"));
+		renderer.update(
+			[
+				{
+					entries: [
+						{
+							file: { name: "Entry", path: "Entry.md" },
+							getValue: () => ({ toString: () => "null", renderTo }),
+						},
+					],
+					showHeader: false,
+				},
+			] as never,
+			["note.label"]
+		);
+		expect(renderTo).toHaveBeenCalledOnce();
+		expect(container.querySelector("td")?.textContent).toBe("null");
+		expect(container.querySelector(".bp-table-cell-empty")).toBeNull();
+	});
+
+	it("shows an empty column selection without rendering blank rows and recovers when columns return", () => {
+		const container = document.body.createDiv();
+		const renderer = new TableRenderer(createApp(), container, createDisplayName(), {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: false,
+		});
+		const entry = {
+			file: { name: "Entry", path: "Entry.md" },
+			getValue: () => ({ renderTo: vi.fn(), toString: () => "Entry" }),
+		};
+		const groups = [{ entries: [entry], showHeader: false }] as never;
+		renderer.update(groups, ["file.name"]);
+		expect(container.querySelectorAll("tbody tr")).toHaveLength(1);
+
+		renderer.update(groups, []);
+		expect(container.querySelectorAll("tbody tr")).toHaveLength(0);
+		expect(container.querySelector("table")?.style.display).toBe("none");
+		expect(container.querySelector(".bp-empty-state")?.textContent).toBe("No properties selected");
+
+		renderer.update(groups, ["file.name"]);
+		expect(container.querySelector("a")?.textContent).toBe("Entry");
+		expect(container.querySelector<HTMLElement>(".bp-empty-state")?.style.display).toBe("none");
+		renderer.update([], []);
+		expect(container.querySelector(".bp-empty-state")?.textContent).toBe("No results");
+	});
+
 	it("opens file links through the workspace click event", () => {
 		const container = document.body.createDiv();
 		const openLinkText = vi.fn();
@@ -133,6 +205,87 @@ describe("TableRenderer native value rendering", () => {
 			"hover-link",
 			expect.objectContaining({ hoverParent, linktext: "Entry.md" })
 		);
+	});
+
+	it("routes nested file-link targets to the current entry and ignores detached page links", () => {
+		const container = document.body.createDiv();
+		const openLinkText = vi.fn();
+		const trigger = vi.fn();
+		const renderer = new TableRenderer(createApp(openLinkText, trigger), container, createDisplayName(), {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: false,
+		});
+		const update = (path: string) => {
+			renderer.update(
+				[
+					{
+						showHeader: false,
+						entries: [
+							{
+								file: { name: path, path },
+								getValue: () => ({ renderTo: vi.fn(), toString: () => path }),
+							},
+						],
+					},
+				] as never,
+				["file.name"]
+			);
+		};
+		update("Previous.md");
+		const previousLink = container.querySelector("a");
+		update("Current.md");
+		previousLink?.removeAttribute("href");
+		previousLink?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+		expect(openLinkText).not.toHaveBeenCalled();
+
+		const link = container.querySelector("a");
+		const child = link?.createSpan({ text: "Nested target" });
+		child?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, metaKey: true }));
+		expect(openLinkText).toHaveBeenCalledExactlyOnceWith("Current.md", "", true);
+		child?.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+		expect(trigger).toHaveBeenCalledWith(
+			"hover-link",
+			expect.objectContaining({ linktext: "Current.md", targetEl: link })
+		);
+	});
+
+	it("leaves links rendered by native values to their own handlers", () => {
+		const container = document.body.createDiv();
+		const openLinkText = vi.fn();
+		const nativeClick = vi.fn((event: MouseEvent) => event.preventDefault());
+		const renderer = new TableRenderer(createApp(openLinkText), container, createDisplayName(), {
+			hoverParent: { hoverPopover: null },
+			renderContext: { hoverPopover: null },
+			stickyHeader: false,
+		});
+		renderer.update(
+			[
+				{
+					showHeader: false,
+					entries: [
+						{
+							file: { name: "Entry", path: "Entry.md" },
+							getValue: () => ({
+								toString: () => "Related",
+								renderTo: (cell: HTMLElement) => {
+									const link = cell.createEl("a", {
+										cls: "internal-link",
+										text: "Related",
+										attr: { "data-href": "Related.md", href: "Related.md" },
+									});
+									link.addEventListener("click", nativeClick);
+								},
+							}),
+						},
+					],
+				},
+			] as never,
+			["note.related"]
+		);
+		container.querySelector<HTMLAnchorElement>("a")?.click();
+		expect(nativeClick).toHaveBeenCalledOnce();
+		expect(openLinkText).not.toHaveBeenCalled();
 	});
 
 	it("degrades a throwing native renderer without aborting the row", () => {
