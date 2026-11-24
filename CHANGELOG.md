@@ -1,3 +1,32 @@
+## [2.1.0](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.5...2.1.0) (2026-11-24)
+
+### Features
+
+* add direct page entry with Enter/change submission, Escape cancellation, inline validation, and empty-result disabling
+* keep the previously visible first item on screen when changing the page size
+
+### Fixes
+
+* consume the native grouped result, including manual group order, hidden groups, a null-value group, and Hide all groups
+* respect an empty native property order as Hide all and refresh renamed column headers without rebuilding unchanged cells
+* treat literal text `null` as a value instead of an empty cell
+* delegate file-link clicks, auxiliary clicks, and hover previews from the table body without retaining stale entries
+* own and release the view's child container so the host DOM is untouched on unload
+* adapt the pagination bar to narrow split panes and mobile with container queries and larger touch targets
+
+### Performance
+
+* index group offsets once per data update and navigate pages in O(log G + P) without copying every row
+
+### Tests
+
+* expand the tracked host matrix to 16 scenarios, including manual groups, hidden groups, hidden properties, and direct page entry
+* write host fixtures in Obsidian's canonical YAML form and fail early on a hidden window or Restricted Mode
+
+### Dependencies
+
+* update the Obsidian API types to 1.14.4 and the Obsidian ESLint plugin to 0.6.0
+
 ## [2.0.5](https://github.com/sean2077/obsidian-bases-paginator/compare/2.0.4...2.0.5) (2026-07-21)
 
 ### Fixes
