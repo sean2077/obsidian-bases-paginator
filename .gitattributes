@@ -1,3 +1,9 @@
+# agent-scaffold:line-endings:start
+# Repository defaults; project rules below and nested attributes take precedence.
+* text=auto eol=lf
+*.[bB][aA][tT] text eol=crlf
+*.[cC][mM][dD] text eol=crlf
+# agent-scaffold:line-endings:end
 * text=auto eol=lf
 
 .agents/tools/*.sh text eol=lf
@@ -6,3 +12,6 @@
 .agents/tools/hooks/*.py text eol=lf
 .agents/relink-skills.sh text eol=lf
 .agents/*.py text eol=lf
+.agents/tools/release/*.py text eol=lf
+.agents/tools/release/*.md text eol=lf
+.agents/conventions/*.md text eol=lf

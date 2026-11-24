@@ -6,8 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || exit 0; bash \"$root/.agents/tools/hooks/trunk_edit_guard.sh\"'",
-            "statusMessage": "Checking worktree policy"
+            "command": "python -X utf8 .agents/tools/hooks/hook-paths.py --guard",
+            "statusMessage": "Checking worktree policy",
+            "timeout": 30
           }
         ]
       }
@@ -18,8 +19,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash -lc 'root=\"$(git rev-parse --show-toplevel 2>/dev/null)\" || exit 0; bash \"$root/.agents/tools/hooks/authority_doc_budget.sh\"'",
-            "statusMessage": "Checking AGENTS.md budget"
+            "command": "python -X utf8 .agents/tools/hooks/hook-paths.py --budget",
+            "statusMessage": "Checking AGENTS.md budget",
+            "timeout": 30
           }
         ]
       }
