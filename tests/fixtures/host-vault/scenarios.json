@@ -1,10 +1,12 @@
 {
 	"version": 1,
 	"fixtureId": "bases-paginator-host-v2",
+	"minimumHostVersion": "1.14.3",
 	"sets": [
 		{ "id": "grouped", "tag": "host-grouped", "count": 30, "kind": "standard" },
 		{ "id": "single", "tag": "host-single", "count": 1, "kind": "standard" },
 		{ "id": "exact", "tag": "host-exact", "count": 10, "kind": "standard" },
+		{ "id": "null-group", "tag": "host-null-group", "count": 12, "kind": "compact" },
 		{ "id": "limit", "tag": "host-limit", "count": 20, "kind": "standard" },
 		{ "id": "values", "tag": "host-values", "count": 8, "kind": "values" },
 		{ "id": "page1", "tag": "host-page-1", "count": 3, "kind": "standard" },
@@ -24,6 +26,51 @@
 			"primary": true,
 			"walkAllPages": true,
 			"expectGroups": true
+		},
+		{
+			"id": "manual-groups",
+			"set": "grouped",
+			"view": "Ordered visible groups",
+			"base": "Bases/Manual groups.base",
+			"embed": "Embeds/Manual groups.md",
+			"pageSize": 10,
+			"groupBy": "status",
+			"groupOrder": ["Todo", "Doing"],
+			"walkAllPages": true,
+			"expectGroups": true,
+			"expectGroupLabels": ["Todo"]
+		},
+		{
+			"id": "hidden-groups",
+			"set": "grouped",
+			"view": "All groups hidden",
+			"base": "Bases/Hidden groups.base",
+			"embed": "Embeds/Hidden groups.md",
+			"pageSize": 10,
+			"groupBy": "status",
+			"groupOrder": []
+		},
+		{
+			"id": "null-group",
+			"set": "null-group",
+			"view": "Only the empty value group",
+			"base": "Bases/Null group.base",
+			"embed": "Embeds/Null group.md",
+			"pageSize": 10,
+			"groupBy": "status",
+			"groupOrder": [null],
+			"walkAllPages": true,
+			"expectGroups": true,
+			"expectGroupLabels": ["No value"]
+		},
+		{
+			"id": "hidden-properties",
+			"set": "exact",
+			"view": "All properties hidden",
+			"base": "Bases/Hidden properties.base",
+			"embed": "Embeds/Hidden properties.md",
+			"pageSize": 10,
+			"order": []
 		},
 		{
 			"id": "empty",

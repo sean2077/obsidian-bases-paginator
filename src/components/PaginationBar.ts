@@ -10,6 +10,8 @@ export class PaginationBar {
 	private readonly nextButton: HTMLButtonElement;
 	private readonly lastButton: HTMLButtonElement;
 	private readonly pageInfo: HTMLSpanElement;
+	private readonly pageJumpInput: HTMLInputElement;
+	private readonly pageJumpError: HTMLSpanElement;
 	private readonly itemInfo: HTMLSpanElement;
 	private readonly pageSizeSelect: HTMLSelectElement;
 	private readonly customPageSizeInput: HTMLInputElement;
@@ -80,17 +82,72 @@ export class PaginationBar {
 		});
 		this.nextButton = this.createButton(navigation, "Next page", "chevron-right", () => this.currentPage + 1);
 		this.lastButton = this.createButton(navigation, "Last page", "chevrons-right", () => this.totalPages);
+		const pageJumpLabel = containerEl.createEl("label", { cls: CSS_CLASSES.pageJump, text: "Go to page " });
+		this.pageJumpInput = pageJumpLabel.createEl("input", {
+			type: "number",
+			cls: CSS_CLASSES.pageJumpInput,
+			attr: { "aria-label": "Go to page", inputmode: "numeric", min: "1", step: "1" },
+		});
+		this.pageJumpError = pageJumpLabel.createSpan({
+			cls: CSS_CLASSES.pageJumpError,
+			attr: { role: "alert" },
+		});
+		this.pageJumpError.hidden = true;
+		this.pageJumpInput.addEventListener("change", () => this.applyPageJump());
+		this.pageJumpInput.addEventListener("keydown", (event) => {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				this.applyPageJump();
+			} else if (event.key === "Escape") {
+				event.preventDefault();
+				this.resetPageJump();
+				this.pageJumpInput.blur();
+			}
+		});
 		this.itemInfo = containerEl.createSpan({ cls: CSS_CLASSES.itemInfo });
 		this.render();
+		this.resetPageJump();
 	}
 
 	update(state: PaginationState): void {
+		const pageChanged = this.currentPage !== state.currentPage || this.totalPages !== state.totalPages;
+		const pageSizeChanged = this.pageSize !== state.pageSize;
 		this.currentPage = state.currentPage;
 		this.totalPages = state.totalPages;
 		this.totalItems = state.totalItems;
 		this.pageSize = state.pageSize;
-		this.syncPageSizeControls();
+		if (pageSizeChanged || this.customPageSizeInput.ownerDocument.activeElement !== this.customPageSizeInput) {
+			this.syncPageSizeControls();
+		}
 		this.render();
+		// A metadata update must not erase a page number the user is still typing.
+		if (
+			pageChanged ||
+			this.totalItems === 0 ||
+			this.pageJumpInput.ownerDocument.activeElement !== this.pageJumpInput
+		) {
+			this.resetPageJump();
+		}
+	}
+
+	private applyPageJump(): void {
+		if (this.pageJumpInput.disabled) return;
+		const page = Number(this.pageJumpInput.value);
+		if (!Number.isSafeInteger(page) || page < 1 || page > this.totalPages) {
+			this.pageJumpInput.setAttribute("aria-invalid", "true");
+			this.pageJumpError.setText(`Enter a page from 1 to ${this.totalPages}.`);
+			this.pageJumpError.hidden = false;
+			return;
+		}
+		this.pageJumpInput.removeAttribute("aria-invalid");
+		this.pageJumpError.hidden = true;
+		this.goToPage(page);
+	}
+
+	private resetPageJump(): void {
+		this.pageJumpInput.value = String(this.currentPage);
+		this.pageJumpInput.removeAttribute("aria-invalid");
+		this.pageJumpError.hidden = true;
 	}
 
 	private createButton(
@@ -150,6 +207,8 @@ export class PaginationBar {
 
 	private render(): void {
 		this.pageInfo.setText(`Page ${this.currentPage} of ${this.totalPages}`);
+		this.pageJumpInput.max = String(this.totalPages);
+		this.pageJumpInput.disabled = this.totalItems === 0;
 		if (this.totalItems === 0) {
 			this.itemInfo.setText("No items");
 		} else {

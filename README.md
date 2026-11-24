@@ -17,14 +17,16 @@ On Obsidian 1.13.0 or later, the plugin's pagination settings also appear in Set
 
 Native Bases can limit the number of query results, but a result limit does not provide next/previous pages or access to the remaining results. This plugin keeps that narrow missing capability:
 
-- First, previous, next, and last page navigation
+- First, previous, next, and last page navigation, plus direct page-number entry
 - Standard and custom page sizes from 1 to 1,000
-- Group-aware pagination using the native Bases grouping result
+- Group-aware pagination using the native Bases grouping result, including manual group order and hidden groups on recent Obsidian versions
 - Native rendering for links, tags, lists, images, formulas, dates, booleans, and numbers
 - Sticky header and top/bottom pagination placement
 - Keyboard-accessible controls, screen-reader status, and mobile-sized touch targets
 
-Native Bases owns search, filters, named views, sorting, property order and width, summaries, copy/export, and selection. Configure those from the Bases toolbar; the paginated view consumes the resulting order and groups.
+Use the native Bases toolbar for search, filters, named views, sorting, grouping, property visibility/order, display names, and copy/export. The paginated view consumes the resulting rows and groups. Cell editing, selection, summaries, and column resizing remain features of the native Table view.
+
+The [November 2026 compatibility review](./docs/compatibility-review-2026-11-24.md) explains the current product boundary and validation status against Obsidian 1.15.1.
 
 ## Important: native result limit
 
@@ -36,6 +38,11 @@ The Obsidian API gives custom views data after the native result limit has alrea
 2. Open the view switcher and choose **Paginated table**.
 3. Use native Bases controls for search, filters, sorting, grouping, and properties.
 4. Choose the page size from the pagination bar or view options.
+5. Enter a number in **Go to page** and press Enter to jump directly. Escape cancels an unfinished entry.
+
+Changing the page size keeps the previous first item within the new page. For example, changing from 25 to 10 items while viewing items 26–50 shows items 21–30. Page numbers are session state and do not write to the `.base` file. Page-size preferences are saved to the view.
+
+Hiding every property shows **No properties selected**. Hiding every group shows **No results**. Empty groups have no rows to paginate and are omitted.
 
 The current persisted view options are:
 
@@ -77,7 +84,14 @@ Plugin-wide search/filter defaults are also retained when old `data.json` settin
 
 - The view cannot edit cells, create/delete rows, or change source notes. Use the native Table view or edit the note.
 - Pagination covers only rows supplied by the Bases API after native filters, sort, and limit.
-- Native Table-only interactions such as multi-cell selection, paste, and summaries are not reimplemented.
+- Native Table-only interactions such as multi-cell selection, paste, summaries, column resizing, and collapsed-group state are not reimplemented.
+- Empty placeholder groups created in the native Group menu are not displayed by this row-based view.
+
+## Performance expectations
+
+Only the current page is rendered. Group offsets are indexed when Bases supplies updated data, so ordinary page navigation does not traverse every group again. Large page sizes still cost more to render, particularly with many columns, images, or formulas.
+
+Pagination bounds this view's DOM work. It does not reduce the cost of native query evaluation, sorting, or formulas, and it does not imply that this custom view is faster than Obsidian's own views. Keep the page size modest for comfortable browsing on mobile.
 
 ## Installation
 

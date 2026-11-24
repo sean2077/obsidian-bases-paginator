@@ -2,6 +2,13 @@ export function setIcon(element: HTMLElement, icon: string): void {
 	element.dataset.icon = icon;
 }
 
+export class NullValue {
+	static readonly value = new NullValue();
+	toString(): string {
+		return "null";
+	}
+}
+
 export class Keymap {
 	static isModEvent(event: MouseEvent): boolean {
 		return event.ctrlKey || event.metaKey;

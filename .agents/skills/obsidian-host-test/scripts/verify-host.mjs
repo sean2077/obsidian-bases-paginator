@@ -13,6 +13,8 @@ import {
 	HostTestError,
 	RetryableHostTestError,
 	assertHost,
+	assertHostVersion,
+	assertFixtureQuery,
 	contentSnapshot,
 	isWithin,
 	parseEvalJson,
@@ -49,7 +51,7 @@ The scenario form is authoritative. The legacy --base/--embed form remains a
 single-fixture smoke test. The runner deploys only this plugin below Obsidian's
 resolved config directory and fails if any vault-content byte changes.`;
 
-const DOM_SNAPSHOT = `JSON.stringify((()=>{const scope=document.querySelector(".workspace-leaf.mod-active")??document;const container=scope.querySelector(".bp-container");if(!container)return {ready:false,activePath:app.workspace.getActiveFile()?.path??null,containers:scope.querySelectorAll(".bp-container").length};const visible=(element)=>Boolean(element&&!element.hidden&&getComputedStyle(element).display!=="none"&&getComputedStyle(element).visibility!=="hidden");const buttons=[...container.querySelectorAll(".bp-pagination-btn")].map(button=>{const bounds=button.getBoundingClientRect();return {label:button.getAttribute("aria-label"),disabled:button.disabled,width:bounds.width,height:bounds.height,focused:document.activeElement===button,focusVisible:button.matches(":focus-visible"),outlineStyle:getComputedStyle(button).outlineStyle,outlineWidth:getComputedStyle(button).outlineWidth};});const select=container.querySelector(".bp-page-size-selector select");const input=container.querySelector(".bp-custom-page-size-input");const error=container.querySelector(".bp-custom-page-size-error");const rows=[...container.querySelectorAll("tbody .bp-table-row")];const rowCells=rows.slice(0,10).map(row=>[...row.querySelectorAll(".bp-table-cell")].map(cell=>({text:cell.textContent?.trim()??"",empty:cell.classList.contains("bp-table-cell-empty"),html:cell.innerHTML.slice(0,500)})));return {ready:true,activePath:app.workspace.getActiveFile()?.path??null,containers:scope.querySelectorAll(".bp-container").length,rows:rows.length,groups:container.querySelectorAll("tbody .bp-group-row").length,fileLinks:container.querySelectorAll("tbody .bp-table-row > .bp-table-cell:first-child a").length,filePaths:rows.map(row=>row.querySelector(".bp-table-cell:first-child a")?.getAttribute("data-href")??null).filter(Boolean),links:container.querySelectorAll("tbody a").length,images:container.querySelectorAll("tbody img").length,assetLinks:container.querySelectorAll('tbody [data-href="Assets/sample.svg"]').length,checkboxes:[...container.querySelectorAll('tbody input[type="checkbox"]')].map(item=>({checked:item.checked,ariaChecked:item.getAttribute("aria-checked")})),headerTexts:[...container.querySelectorAll("thead th")].map(cell=>cell.textContent?.trim()??""),cellText:rows.map(row=>row.textContent?.trim()??"").join("\\n"),rowCells,status:container.querySelector("[role=status]")?.textContent?.trim()??"",item:container.querySelector(".bp-item-info")?.textContent?.trim()??"",pageSize:select?.value??"",options:select?[...select.options].map(option=>option.value):[],customValue:input?.value??"",customInputHidden:input?.hidden??true,inputMin:input?.getAttribute("min")??null,inputMax:input?.getAttribute("max")??null,ariaInvalid:input?.getAttribute("aria-invalid")??null,errorVisible:visible(error),emptyVisible:visible(container.querySelector(".bp-empty-state")),emptyText:container.querySelector(".bp-empty-state")?.textContent?.trim()??"",landmarks:{pagination:container.querySelectorAll('nav[aria-label="Pagination"]').length,tables:container.querySelectorAll('table[aria-label="Paginated results"]').length},buttons};})())`;
+const DOM_SNAPSHOT = `JSON.stringify((()=>{const scope=document.querySelector(".workspace-leaf.mod-active")??document;const container=scope.querySelector(".bp-container");if(!container)return {ready:false,activePath:app.workspace.getActiveFile()?.path??null,containers:scope.querySelectorAll(".bp-container").length};const visible=(element)=>Boolean(element&&!element.hidden&&getComputedStyle(element).display!=="none"&&getComputedStyle(element).visibility!=="hidden");const buttons=[...container.querySelectorAll(".bp-pagination-btn")].map(button=>{const bounds=button.getBoundingClientRect();return {label:button.getAttribute("aria-label"),disabled:button.disabled,width:bounds.width,height:bounds.height,focused:document.activeElement===button,focusVisible:button.matches(":focus-visible"),outlineStyle:getComputedStyle(button).outlineStyle,outlineWidth:getComputedStyle(button).outlineWidth};});const select=container.querySelector(".bp-page-size-selector select");const input=container.querySelector(".bp-custom-page-size-input");const error=container.querySelector(".bp-custom-page-size-error");const jump=container.querySelector(".bp-page-jump-input");const jumpError=container.querySelector(".bp-page-jump-error");const rows=[...container.querySelectorAll("tbody .bp-table-row")];const rowCells=rows.slice(0,10).map(row=>[...row.querySelectorAll(".bp-table-cell")].map(cell=>({text:cell.textContent?.trim()??"",empty:cell.classList.contains("bp-table-cell-empty"),html:cell.innerHTML.slice(0,500)})));return {ready:true,activePath:app.workspace.getActiveFile()?.path??null,containers:scope.querySelectorAll(".bp-container").length,rows:rows.length,groups:container.querySelectorAll("tbody .bp-group-row").length,groupLabels:[...container.querySelectorAll("tbody .bp-group-row")].map(row=>row.textContent?.trim()??""),fileLinks:container.querySelectorAll("tbody .bp-table-row > .bp-table-cell:first-child a").length,filePaths:rows.map(row=>row.querySelector(".bp-table-cell:first-child a")?.getAttribute("data-href")??null).filter(Boolean),links:container.querySelectorAll("tbody a").length,images:container.querySelectorAll("tbody img").length,assetLinks:container.querySelectorAll('tbody [data-href="Assets/sample.svg"]').length,checkboxes:[...container.querySelectorAll('tbody input[type="checkbox"]')].map(item=>({checked:item.checked,ariaChecked:item.getAttribute("aria-checked")})),headerTexts:[...container.querySelectorAll("thead th")].map(cell=>cell.textContent?.trim()??""),cellText:rows.map(row=>row.textContent?.trim()??"").join("\\n"),rowCells,status:container.querySelector("[role=status]")?.textContent?.trim()??"",item:container.querySelector(".bp-item-info")?.textContent?.trim()??"",pageSize:select?.value??"",options:select?[...select.options].map(option=>option.value):[],customValue:input?.value??"",customInputHidden:input?.hidden??true,inputMin:input?.getAttribute("min")??null,inputMax:input?.getAttribute("max")??null,ariaInvalid:input?.getAttribute("aria-invalid")??null,jump:{label:jump?.getAttribute("aria-label")??null,value:jump?.value??"",min:jump?.min??null,max:jump?.max??null,disabled:jump?.disabled??null,focused:document.activeElement===jump,focusVisible:jump?.matches(":focus-visible")??false,outlineStyle:jump?getComputedStyle(jump).outlineStyle:null,outlineWidth:jump?getComputedStyle(jump).outlineWidth:null,ariaInvalid:jump?.getAttribute("aria-invalid")??null,errorVisible:visible(jumpError)},errorVisible:visible(error),emptyVisible:visible(container.querySelector(".bp-empty-state")),emptyText:container.querySelector(".bp-empty-state")?.textContent?.trim()??"",landmarks:{pagination:container.querySelectorAll('nav[aria-label="Pagination"]').length,tables:container.querySelectorAll('table[aria-label="Paginated results"]').length},buttons};})())`;
 
 function fail(stage, message, options) {
 	throw new HostTestError(stage, message, options);
@@ -273,6 +275,7 @@ async function main() {
 			"scenario file is missing or escapes the repository"
 		);
 		fixtureSpec = await readFixtureSpec(scenariosPath);
+		assertHostVersion(obsidianVersion, fixtureSpec.minimumHostVersion);
 		const markerPath = resolve(vaultPath, FIXTURE_MARKER);
 		assertHost("fixture", existsSync(markerPath), `fixture marker is missing; run npm run test:host:setup first`);
 		const marker = parseJson("fixture", await readFile(markerPath, "utf8"));
@@ -334,7 +337,7 @@ async function main() {
 		}
 		fail(stage, `timed out; last state: ${JSON.stringify(last).slice(0, 4000)}`);
 	};
-	const openFixture = async (path, stage, expectedTotal) => {
+	const openFixture = async (path, stage, expectedTotal, noProperties = false) => {
 		const expectedPath = path.replaceAll("\\", "/");
 		const resetCandidates = fixtureSpec ? ["Reference.md"] : [baseArgument, embedArgument].filter(Boolean);
 		const resetPath = resetCandidates.find((candidate) => candidate !== path);
@@ -352,6 +355,14 @@ async function main() {
 			if (!snapshot.ready || snapshot.activePath !== expectedPath || snapshot.containers !== 1) return false;
 			if (expectedTotal === 0) {
 				return snapshot.rows === 0 && snapshot.emptyVisible && snapshot.item === "No items";
+			}
+			if (noProperties) {
+				return (
+					snapshot.rows === 0 &&
+					snapshot.emptyVisible &&
+					snapshot.emptyText === "No properties selected" &&
+					parseItemStatus(snapshot.item)?.total === expectedTotal
+				);
 			}
 			return snapshot.rows > 0 && parseItemStatus(snapshot.item)?.total === expectedTotal;
 		});
@@ -402,19 +413,46 @@ async function main() {
 		assertHost(`base-query:${scenario.id}`, Array.isArray(rows), "base:query did not return an array");
 		return rows;
 	};
+	const enterPageValue = async (value, commit, stage) => {
+		const focused = await evalJson(
+			`JSON.stringify((()=>{const input=document.querySelector(".workspace-leaf.mod-active .bp-page-jump-input");if(!input)return {found:false};input.focus();input.value=${JSON.stringify(value)};if(${JSON.stringify(commit)}==="change")input.dispatchEvent(new Event("change",{bubbles:true}));return {found:true,focused:document.activeElement===input};})())`,
+			`${stage}-input`
+		);
+		assertHost(stage, focused.found && focused.focused, "could not focus the page jump input");
+		if (commit === "enter") {
+			for (const type of ["rawKeyDown", "keyUp"]) {
+				const params = {
+					type,
+					code: "Enter",
+					key: "Enter",
+					nativeVirtualKeyCode: 13,
+					windowsVirtualKeyCode: 13,
+				};
+				await cliEventually(
+					["dev:cdp", "method=Input.dispatchKeyEvent", `params=${JSON.stringify(params)}`],
+					stage
+				);
+			}
+		}
+	};
 	const assertScenario = (scenario, snapshot) => {
 		const stage = `scenario:${scenario.id}`;
 		const page = parsePageStatus(snapshot.status);
 		const expectedTotal = scenario.expectedTotal;
 		const pageSize = scenario.pageSize;
 		const expectedPages = scenario.expectedPages;
+		const noProperties = Array.isArray(scenario.order) && scenario.order.length === 0;
 		assertHost(stage, snapshot.containers === 1, `expected one paginator, found ${snapshot.containers}`);
 		assertHost(
 			stage,
 			page?.current === 1 && page.total === expectedPages,
 			`unexpected page status '${snapshot.status}'`
 		);
-		assertHost(stage, snapshot.rows === Math.min(pageSize, expectedTotal), `unexpected row count ${snapshot.rows}`);
+		assertHost(
+			stage,
+			snapshot.rows === (noProperties ? 0 : Math.min(pageSize, expectedTotal)),
+			`unexpected row count ${snapshot.rows}`
+		);
 		assertHost(stage, snapshot.fileLinks === snapshot.rows, `expected one file link per row`);
 		assertHost(stage, snapshot.landmarks.pagination === 1, "pagination landmark is missing or duplicated");
 		assertHost(stage, snapshot.landmarks.tables === 1, "labelled results table is missing or duplicated");
@@ -424,6 +462,15 @@ async function main() {
 			`page-size options are incomplete: ${snapshot.options.join(", ")}`
 		);
 		assertHost(stage, snapshot.inputMin === "1" && snapshot.inputMax === "1000", "custom bounds drifted");
+		assertHost(
+			stage,
+			snapshot.jump.label === "Go to page" &&
+				snapshot.jump.min === "1" &&
+				snapshot.jump.max === String(expectedPages) &&
+				snapshot.jump.value === "1" &&
+				snapshot.jump.disabled === (expectedTotal === 0),
+			"page jump bounds, name, value, or empty-state disabling drifted"
+		);
 		if (expectedTotal === 0) {
 			assertHost(stage, snapshot.item === "No items", `unexpected empty item status '${snapshot.item}'`);
 			assertHost(
@@ -435,10 +482,21 @@ async function main() {
 			const item = parseItemStatus(snapshot.item);
 			assertHost(
 				stage,
-				item?.start === 1 && item.end === snapshot.rows && item.total === expectedTotal,
+				item?.start === 1 && item.end === Math.min(pageSize, expectedTotal) && item.total === expectedTotal,
 				`row/status mismatch: '${snapshot.item}'`
 			);
-			assertHost(stage, !snapshot.emptyVisible, "empty state is visible for non-empty results");
+			if (noProperties) {
+				assertHost(
+					stage,
+					snapshot.emptyVisible &&
+						snapshot.emptyText === "No properties selected" &&
+						snapshot.headerTexts.length === 0 &&
+						snapshot.links === 0,
+					"hidden properties reappeared or empty state is incorrect"
+				);
+			} else {
+				assertHost(stage, !snapshot.emptyVisible, "empty state is visible for non-empty results");
+			}
 		}
 		for (const label of EXPECTED_BUTTONS) {
 			assertHost(
@@ -475,6 +533,20 @@ async function main() {
 		}
 		if (scenario.expectGroups && expectedTotal > 0) {
 			assertHost(stage, snapshot.groups > 0, "group headers were not rendered");
+		}
+		if (scenario.expectGroupLabels) {
+			assertHost(
+				stage,
+				JSON.stringify(snapshot.groupLabels) === JSON.stringify(scenario.expectGroupLabels),
+				`unexpected group labels: ${JSON.stringify(snapshot.groupLabels)}`
+			);
+		}
+		if (scenario.expectedVisiblePaths) {
+			assertHost(
+				stage,
+				JSON.stringify(snapshot.filePaths) === JSON.stringify(scenario.expectedVisiblePaths.slice(0, pageSize)),
+				"first-page paths do not match manual group order and visibility"
+			);
 		}
 	};
 
@@ -515,11 +587,7 @@ async function main() {
 		for (const scenario of scenarios) {
 			const rows = await baseQuery(scenario);
 			if (fixtureSpec) {
-				assertHost(
-					`base-query:${scenario.id}`,
-					rows.length === scenario.expectedTotal,
-					`expected ${scenario.expectedTotal} rows, received ${rows.length}`
-				);
+				assertFixtureQuery(scenario, queryPaths(rows, `base-query:${scenario.id}`));
 			} else {
 				scenario.expectedTotal = rows.length;
 			}
@@ -566,7 +634,12 @@ async function main() {
 		const scenarioResults = [];
 		for (const scenario of scenarios) {
 			log(`verify scenario ${scenario.id}`);
-			const first = await openFixture(scenario.base, `scenario:${scenario.id}:open`, scenario.expectedTotal);
+			const first = await openFixture(
+				scenario.base,
+				`scenario:${scenario.id}:open`,
+				scenario.expectedTotal,
+				Array.isArray(scenario.order) && scenario.order.length === 0
+			);
 			if (!fixtureSpec && !scenario.pageSize) {
 				const item = parseItemStatus(first.item);
 				scenario.pageSize = item?.end ?? Math.max(1, scenario.expectedTotal);
@@ -576,11 +649,13 @@ async function main() {
 			const result = {
 				id: scenario.id,
 				queryRows: queryResults.get(scenario.id).length,
+				visibleRows: scenario.expectedTotal,
 				first: compactSnapshot(first),
 			};
 
 			if (scenario.walkAllPages && scenario.expectedPages > 1) {
 				const seenPaths = new Set(first.filePaths);
+				const orderedPaths = [...first.filePaths];
 				let current = first;
 				for (let page = 2; page <= scenario.expectedPages; page += 1) {
 					await clickButton("Next page", `scenario:${scenario.id}:walk`);
@@ -589,10 +664,19 @@ async function main() {
 						(snapshot) => parsePageStatus(snapshot.status)?.current === page
 					);
 					for (const path of current.filePaths) seenPaths.add(path);
+					orderedPaths.push(...current.filePaths);
 				}
 				const expectedPaths = new Set(
-					queryPaths(queryResults.get(scenario.id), `scenario:${scenario.id}:paths`)
+					scenario.expectedVisiblePaths ??
+						queryPaths(queryResults.get(scenario.id), `scenario:${scenario.id}:paths`)
 				);
+				if (scenario.expectedVisiblePaths) {
+					assertHost(
+						`scenario:${scenario.id}:walk`,
+						JSON.stringify(orderedPaths) === JSON.stringify(scenario.expectedVisiblePaths),
+						"page walk changed the configured group order or included hidden rows"
+					);
+				}
 				assertHost(
 					`scenario:${scenario.id}:walk`,
 					seenPaths.size === expectedPaths.size && [...expectedPaths].every((path) => seenPaths.has(path)),
@@ -652,6 +736,52 @@ async function main() {
 			);
 		}
 
+		let pageJump = null;
+		if (primary.expectedPages > 1) {
+			await openFixture(primary.base, "jump-open", primary.expectedTotal);
+			await enterPageValue(String(primary.expectedPages), "enter", "jump-enter");
+			const entered = await waitFor(
+				"jump-enter",
+				(snapshot) => parsePageStatus(snapshot.status)?.current === primary.expectedPages
+			);
+			assertHost(
+				"jump-enter",
+				entered.jump.focused &&
+					entered.jump.focusVisible &&
+					entered.jump.outlineStyle !== "none" &&
+					entered.jump.outlineWidth !== "0px",
+				"jumping with Enter lost its visible focus"
+			);
+			const invalidValues = ["0", "-1", "1.5", String(primary.expectedPages + 1), ""];
+			for (const value of invalidValues) {
+				await enterPageValue(value, "enter", "jump-invalid");
+				const rejected = await waitFor(
+					"jump-invalid",
+					(snapshot) => snapshot.jump.ariaInvalid === "true" && snapshot.jump.errorVisible
+				);
+				assertHost(
+					"jump-invalid",
+					rejected.status === entered.status &&
+						JSON.stringify(rejected.filePaths) === JSON.stringify(entered.filePaths) &&
+						rejected.jump.focused,
+					`invalid page '${value}' changed the current page or lost focus`
+				);
+			}
+			await enterPageValue("1", "change", "jump-change");
+			const changed = await waitFor(
+				"jump-change",
+				(snapshot) =>
+					parsePageStatus(snapshot.status)?.current === 1 &&
+					snapshot.jump.ariaInvalid === null &&
+					!snapshot.jump.errorVisible
+			);
+			pageJump = {
+				enter: compactSnapshot(entered),
+				change: compactSnapshot(changed),
+				rejectedValues: invalidValues,
+			};
+		}
+
 		let embedded = null;
 		if (primary.embed) {
 			embedded = await openFixture(primary.embed, "primary-embedded", primary.expectedTotal);
@@ -681,13 +811,14 @@ async function main() {
 		const axFacts = collectAxFacts(axTree);
 		const axRoles = new Set(axFacts.map((fact) => fact.role));
 		const axNames = new Set(axFacts.map((fact) => fact.name));
-		for (const role of ["navigation", "table", "status", "combobox", "button"]) {
+		for (const role of ["navigation", "table", "status", "combobox", "button", "spinbutton"]) {
 			assertHost("accessibility", axRoles.has(role), `accessibility tree is missing role '${role}'`);
 		}
 		for (const name of [
 			"Pagination",
 			"Paginated results",
 			"Items per page",
+			"Go to page",
 			primaryFirst.status,
 			...EXPECTED_BUTTONS,
 		]) {
@@ -807,8 +938,8 @@ async function main() {
 
 		summary = {
 			accessibility: {
-				names: ["Pagination", "Paginated results", "Items per page", ...EXPECTED_BUTTONS],
-				roles: ["navigation", "table", "status", "combobox", "button"],
+				names: ["Pagination", "Paginated results", "Items per page", "Go to page", ...EXPECTED_BUTTONS],
+				roles: ["navigation", "table", "status", "combobox", "button", "spinbutton"],
 			},
 			artifacts: [desktopScreenshot, mobileScreenshot],
 			embedded: embedded ? compactSnapshot(embedded) : null,
@@ -824,6 +955,7 @@ async function main() {
 			mousePage: mousePage ? compactSnapshot(mousePage) : null,
 			keyboardPage: keyboardPage ? compactSnapshot(keyboardPage) : null,
 			obsidianVersion,
+			pageJump,
 			performance: performanceEvidence,
 			platform: `${process.platform}-${process.arch}`,
 			pluginId: manifest.id,

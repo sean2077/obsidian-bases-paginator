@@ -142,6 +142,45 @@ const SAFE_ID = /^[a-z0-9][a-z0-9-]*$/u;
 const SAFE_PROPERTY_ID = /^[A-Za-z0-9_.-]+$/u;
 const SAFE_VIEW_NAME = /^[A-Za-z0-9][A-Za-z0-9 _-]*$/u;
 
+export function assertHostVersion(output, minimum) {
+	const version = String(output)
+		.match(/\b(\d+)\.(\d+)\.(\d+)\b/u)
+		?.slice(1)
+		.map(Number);
+	const required = minimum.split(".").map(Number);
+	const difference = version?.findIndex((part, index) => part !== required[index]);
+	assertHost(
+		"host-version",
+		version && (difference === -1 || version[difference] > required[difference]),
+		`this fixture requires Obsidian ${minimum}+; received '${String(output).trim()}'`
+	);
+}
+
+export function assertFixtureQuery(scenario, paths) {
+	const stage = `base-query:${scenario.id}`;
+	if (!scenario.expectedQueryPaths) {
+		assertHost(
+			stage,
+			paths.length === scenario.expectedQueryTotal,
+			`expected ${scenario.expectedQueryTotal} query rows, received ${paths.length}`
+		);
+		return;
+	}
+	// base:query can expose ungrouped query rows rather than the visible groups.
+	// Accept either complete stream, but derive display totals/order from fixture
+	// status values and groupOrder, never from the CLI's returned row count.
+	const received = new Set(paths);
+	const matches = (expected) =>
+		paths.length === expected.length &&
+		received.size === expected.length &&
+		expected.every((path) => received.has(path));
+	assertHost(
+		stage,
+		matches(scenario.expectedQueryPaths) || matches(scenario.expectedVisiblePaths),
+		"query paths match neither the complete fixture query nor its visible groups"
+	);
+}
+
 function safeFixturePath(stage, path, extension) {
 	assertHost(stage, typeof path === "string" && path.length > 0, `${extension} path is missing`);
 	assertHost(stage, !isAbsolute(path) && !path.split(/[\\/]/u).includes(".."), `unsafe fixture path: ${path}`);
@@ -159,6 +198,12 @@ export function parseFixtureSpec(value) {
 	);
 	assertHost("fixture-spec", Array.isArray(value.sets), "sets must be an array");
 	assertHost("fixture-spec", Array.isArray(value.scenarios), "scenarios must be an array");
+	const minimumHostVersion = value.minimumHostVersion ?? "1.12.7";
+	assertHost(
+		"fixture-spec",
+		typeof minimumHostVersion === "string" && /^\d+\.\d+\.\d+$/u.test(minimumHostVersion),
+		"invalid minimumHostVersion"
+	);
 
 	const setIds = new Set();
 	const sets = value.sets.map((candidate) => {
@@ -240,6 +285,36 @@ export function parseFixtureSpec(value) {
 				`invalid sort for scenario ${candidate.id}`
 			);
 		}
+		if (candidate.order !== undefined) {
+			assertHost(
+				"fixture-spec",
+				Array.isArray(candidate.order) &&
+					candidate.order.every(
+						(property) => typeof property === "string" && SAFE_PROPERTY_ID.test(property)
+					),
+				`invalid order for scenario ${candidate.id}`
+			);
+		}
+		if (candidate.groupOrder !== undefined) {
+			assertHostVersion(minimumHostVersion, "1.14.3");
+			assertHost(
+				"fixture-spec",
+				Array.isArray(candidate.groupOrder) &&
+					candidate.groupOrder.every((key) => key === null || typeof key === "string") &&
+					new Set(candidate.groupOrder).size === candidate.groupOrder.length,
+				`invalid groupOrder for scenario ${candidate.id}`
+			);
+			// This fixture oracle models only its generated status values, with score
+			// ordering and no result limit. It is not a second Bases query engine.
+			assertHost(
+				"fixture-spec",
+				set &&
+					candidate.groupBy === "status" &&
+					candidate.limit === undefined &&
+					(candidate.sort === undefined || JSON.stringify(candidate.sort) === '["score"]'),
+				`manual-group oracle requires a set, status grouping, score sort, and no limit: ${candidate.id}`
+			);
+		}
 		const sourceTotal = candidate.sourceTotal ?? set?.count ?? 0;
 		assertHost(
 			"fixture-spec",
@@ -265,20 +340,36 @@ export function parseFixtureSpec(value) {
 		}
 		if (candidate.primary) primaryCount += 1;
 		if (candidate.performance) performanceCount += 1;
-		const expectedTotal = Math.min(sourceTotal, candidate.limit ?? sourceTotal);
+		const expectedQueryTotal = Math.min(sourceTotal, candidate.limit ?? sourceTotal);
+		let expectedQueryPaths;
+		let expectedVisiblePaths;
+		if (candidate.groupOrder !== undefined) {
+			const entries = Array.from({ length: set.count }, (_, offset) => ({
+				path: `Generated/${set.id}/${entryName(set, offset + 1)}.md`,
+				status: set.kind === "compact" ? null : ["Doing", "Done", "Todo"][offset % 3],
+			}));
+			expectedQueryPaths = entries.map((entry) => entry.path);
+			expectedVisiblePaths = candidate.groupOrder.flatMap((key) =>
+				entries.filter((entry) => entry.status === key).map((entry) => entry.path)
+			);
+		}
+		const expectedTotal = expectedVisiblePaths?.length ?? expectedQueryTotal;
 		return {
 			...candidate,
 			base,
 			embed,
 			expectedPages: Math.max(1, Math.ceil(expectedTotal / candidate.pageSize)),
 			expectedTotal,
+			expectedQueryTotal,
+			expectedQueryPaths,
+			expectedVisiblePaths,
 			set: set?.id,
 			tag,
 		};
 	});
 	assertHost("fixture-spec", primaryCount === 1, `expected one primary scenario, found ${primaryCount}`);
 	assertHost("fixture-spec", performanceCount === 1, `expected one performance scenario, found ${performanceCount}`);
-	return { fixtureId: value.fixtureId, scenarios, sets, version: value.version };
+	return { fixtureId: value.fixtureId, minimumHostVersion, scenarios, sets, version: value.version };
 }
 
 function yamlString(value) {
@@ -332,6 +423,7 @@ function buildEntry(set, index) {
 }
 
 function baseOrder(scenario) {
+	if (Array.isArray(scenario.order)) return scenario.order;
 	if (scenario.valueAssertions) {
 		return [
 			"file.name",
@@ -372,8 +464,10 @@ function buildBase(scenario) {
 	if (scenario.groupBy) {
 		lines.push("    groupBy:", `      property: ${scenario.groupBy}`, "      direction: ASC");
 	}
-	lines.push("    order:");
-	for (const property of baseOrder(scenario)) lines.push(`      - ${property}`);
+	if (scenario.groupOrder !== undefined) lines.push(`    groupOrder: ${JSON.stringify(scenario.groupOrder)}`);
+	const order = baseOrder(scenario);
+	lines.push(order.length === 0 ? "    order: []" : "    order:");
+	for (const property of order) lines.push(`      - ${property}`);
 	const sort = Array.isArray(scenario.sort) ? scenario.sort : ["score"];
 	lines.push("    sort:");
 	for (const property of sort) lines.push(`      - property: ${property}`, "        direction: ASC");

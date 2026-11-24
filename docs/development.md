@@ -4,7 +4,7 @@ This is the canonical contributor guide for Bases Paginator. Executable configur
 
 ## Environment and commands
 
-CI verifies current Node.js 20 and 22 releases. Use npm and the checked-in lockfile.
+CI verifies current Node.js 20 and 22 releases. The development toolchain requires Node 20.19+, 22.13+, or 24+. Use npm and the checked-in lockfile.
 
 | Task | Command | Notes |
 |---|---|---|
@@ -29,14 +29,17 @@ The plugin contributes one missing capability: page navigation over the result s
 
 | Native Bases owns | This plugin owns |
 |---|---|
-| Search, typed filters, named views, sort, grouping configuration, property order/width, result limit, summaries, selection, copy/export | Page state, page size, group-preserving page slices, a bounded read-only table, accessible page controls |
+| Search, typed filters, named views, sort, grouping configuration, property visibility/order/display names, result limit, copy/export | Page state, page size, group-preserving page slices, a bounded read-only table, accessible page controls |
 
-The compatibility decision was reviewed on 2026-07-21 against official channels:
+Cell editing, selection, column resizing, summaries, and group collapsing belong to native Table's renderer and are not inherited by this custom view.
 
-- The public changelog listed Obsidian 1.12.7 as public stable. Native Bases search is available in the 1.12 line, so `manifest.json:minAppVersion` is 1.12.0.
-- Obsidian 1.13.2 was Catalyst. The project compiles against current API types as a forward check but does not require 1.13-only behavior.
+The compatibility decision was reviewed on 2026-11-24 against official channels. See the [dated review](./compatibility-review-2026-11-24.md) for evidence and verification limits:
+
+- The public stable release was [Obsidian 1.15.1](https://obsidian.md/changelog/2026-11-12-desktop-v1.15.1/). Native Bases search is available in the 1.12 line, so `manifest.json:minAppVersion` remains 1.12.0.
+- The project compiles against the published Obsidian 1.14.4 API types as a forward check. The runtime implementation continues to use 1.12-compatible public APIs.
 - The settings tab returns declarative definitions for search and rendering on 1.13+, while retaining `display()` as the 1.12 fallback. This dual path adds settings search without raising the minimum app version.
 - `BasesQueryResult.data` and `groupedData` already have native filters, sort, and result limit applied. Pagination cannot expose entries removed by that limit.
+- Since 1.14.3, `groupOrder` controls manual ordering and visibility. Consume `groupedData` exactly as supplied, including an empty array for Hide all. Do not rebuild hidden groups from ungrouped `data`. Empty placeholder groups are omitted because this view paginates rows.
 
 Recheck the [Obsidian changelog](https://obsidian.md/changelog/), [Bases view help](https://help.obsidian.md/bases/views), [table help](https://help.obsidian.md/bases/views/table), and [custom Bases view guide](https://docs.obsidian.md/plugins/guides/bases-view) before changing this boundary.
 
@@ -46,16 +49,20 @@ Recheck the [Obsidian changelog](https://obsidian.md/changelog/), [Bases view he
 |---|---|
 | `src/main.ts` | Plugin lifecycle, Bases registration, settings persistence, and settings-tab registration. |
 | `src/settings.ts` | Searchable 1.13+ setting definitions and the equivalent 1.12 imperative fallback. |
-| `src/views/PaginatedTableView.ts` | Adapts native grouped results and coordinates layout and rendering. |
+| `src/views/PaginatedTableView.ts` | Refreshes the native grouped-result snapshot and visible property order on each data update, owns its DOM container, and coordinates layout and rendering. |
 | `src/views/viewOptions.ts` | Exposes only pagination-specific per-view options. |
-| `src/services/Paginator.ts` | Returns page state and a bounded group-preserving slice through one interface. |
+| `src/services/Paginator.ts` | Rebuilds group offsets with `setGroups()` on data updates, then returns bounded group-preserving pages with `paginate()`. |
 | `src/services/SettingsService.ts` | Validates plugin `data.json`, including the legacy shape. |
 | `src/services/ViewSettingsService.ts` | Validates current view values and harmlessly ignores legacy keys. |
-| `src/components/TableRenderer.ts` | Reuses current-page DOM, trims peak-only rows, and delegates each non-file value to `Value.renderTo`. |
-| `src/components/PaginationBar.ts` | Owns accessible page and page-size controls. |
+| `src/components/TableRenderer.ts` | Reuses current-page rows and unchanged headers, refreshes display names, delegates file-link events, and renders each non-file value with `Value.renderTo`. |
+| `src/components/PaginationBar.ts` | Owns accessible page, direct-jump, and page-size controls. |
 | `src/utils/` and `src/types.ts` | Stable identifiers, CSS names, small value/page helpers, and shared contracts. |
 
 Keep the two rendering roles distinct: pass `app.renderContext` to `Value.renderTo`, because native values call its link/tag renderers at runtime; use the current `PaginatedTableView` as the `hoverParent` for custom file-link previews.
+
+Call `Paginator.setGroups()` on every `onDataUpdated()`, even if an array has the same identity. Bases replaces result objects and entries across updates. Only page navigation may reuse the current snapshot. Indexing costs O(G) time and space for G groups without copying every row. Page selection costs O(log G + P), where P is the current page size. Rendering still costs O(P × C) for C visible columns, plus native value-rendering costs. Tests enforce bounded group access rather than timing thresholds.
+
+Do not reuse cells or cache native `Value` output across data updates: `Value.renderTo()` has no public disposal contract for event handlers attached to a cell. Reuse table rows, but replace their cell contents. Use event delegation only for file links owned by this renderer, leaving native value links alone. Respect an empty `getOrder()` as Hide all instead of repopulating columns.
 
 There are two allowed write boundaries:
 
@@ -75,7 +82,7 @@ npm test
 npm run build
 ```
 
-Tests use Vitest and jsdom with a narrow Obsidian API double. They cover the paginator interface, malformed and legacy settings, declarative setting definitions and persistence adapters, false/zero value handling, native value-render delegation, modifier-aware file links, bounded reusable DOM rows, accessible control names, keyboard page-size input, and a 10,000-entry bounded-page case.
+Tests use Vitest and jsdom with a narrow Obsidian API double. They cover the paginator interface, malformed and legacy settings, declarative setting definitions and persistence adapters, false/zero value handling, native value-render delegation, modifier-aware file links, bounded reusable DOM rows, header renaming, hidden properties/groups, snapshot refresh and disposal, direct-jump validation, page-size reading-position preservation, and 10,000-entry/10,000-group bounded-navigation cases.
 
 The test double does not prove Obsidian lifecycle behavior, CSS layout, native rendering implementations, hover popovers, or mobile WebView behavior. Use the CLI-first host gate below for the real renderer, then perform only its named residual manual checks.
 
@@ -88,9 +95,11 @@ npm outdated
 
 Major-version differences in `npm outdated` are not automatic upgrade instructions. Keep the toolchain on versions supported together by the current Obsidian sample/plugin guidance and CI Node matrix.
 
+The scoped npm override for `@microsoft/eslint-plugin-sdl@1.1.0` selects `eslint-plugin-n` 17.24.0 within the same major. SDL 1.1.0 pins 17.10.3, which retains the vulnerable minimatch dependency. The maintained 17.x plugin removes that dependency and supports the existing ESLint 9/Node 20 and 22 toolchain. Reassess and remove the override when SDL releases an updated dependency declaration. Do not use `npm audit fix --force` to accept unrelated major changes or the audit resolver's obsolete-plugin downgrade.
+
 ## Obsidian CLI test-vault gate
 
-Never develop or run these checks in a primary vault. Use an independent disposable test vault whose name contains `test`, `qa`, `sandbox`, or `disposable`, with Bases enabled and a fixture that renders at least two pages. Obsidian 1.12.7 or newer must be running with its CLI enabled.
+Never develop or run these checks in a primary vault. Use an independent disposable test vault whose name contains `test`, `qa`, `sandbox`, or `disposable`, with Bases enabled and a fixture that renders at least two pages. The current full matrix requires Obsidian 1.14.3 or newer with its CLI enabled because it covers manual group order and visibility. The legacy single-fixture smoke form can still run on 1.12.7+.
 
 Prepare the tracked fixture once, or whenever its specification changes. The target directory name must contain `test`, `qa`, `sandbox`, or `disposable`. A non-empty unmarked directory is rejected unless `--adopt` is explicit; adoption preserves unrelated files and later setup runs replace only marker-owned fixture files.
 
@@ -104,7 +113,7 @@ Open or register that vault in Obsidian, enable the CLI, and run the authoritati
 npm run test:host -- --vault obsidian-test-vault --scenarios tests/fixtures/host-vault/scenarios.json
 ```
 
-The gate resolves only the explicit vault, asks Obsidian to ingest the prepared fixture, builds and deploys the current package below the vault's resolved config directory, and then remains read-only with respect to vault content. It uses `base:query` as the native data oracle and the real custom view for rendering evidence. The tracked matrix covers empty, single, exact-boundary, limited, grouped multi-page, malformed legacy, native-value, custom page-size, and 1,200-row cases. It also verifies disable/re-enable and repeated reloads, direct and embedded views, all-page path coverage, CDP mouse and keyboard navigation, invalid custom input, named accessibility roles, 390×844 mobile layout, advisory heap/timing evidence, and empty error buffers. Screenshots are written under `.oma/obsidian-host-test/`; every vault file outside the Obsidian config directory is hashed before and after.
+The gate resolves only the explicit vault, asks Obsidian to ingest the prepared fixture, builds and deploys the current package below the vault's resolved config directory, and then remains read-only with respect to vault content. It uses `base:query` as the native data oracle and the real custom view for rendering evidence. For manual grouping, the fixture separately defines full query paths and visible ordered paths because the CLI may expose ungrouped query rows. The 16-scenario matrix covers empty, single, exact-boundary, limited, grouped multi-page, manual/hidden/null groups, hidden properties, malformed legacy, native-value, custom page-size, and 1,200-row cases. It also verifies disable/re-enable and repeated reloads, direct and embedded views, all-page path coverage, CDP mouse and keyboard navigation, direct page entry, invalid input, named accessibility roles, 390×844 mobile layout, advisory heap/timing evidence, and empty error buffers. Screenshots are written under `.oma/obsidian-host-test/`; every vault file outside the Obsidian config directory is hashed before and after.
 
 The legacy single-fixture form remains available for quick compatibility smoke tests:
 
@@ -116,7 +125,7 @@ The host gate intentionally stays out of GitHub Actions because it requires a ru
 
 Prefer `dev:dom`, `eval`, `dev:cdp`, `dev:errors`, `dev:console`, and `dev:screenshot` for diagnosis and additional host evidence. Computer Use is a fallback only for OS-level dialogs or window chrome. Real screen-reader speech, OS focus behavior, hover timing outside the renderer, and physical iOS/Android behavior remain manual.
 
-Vitest remains authoritative for isolated invalid values (`0`, negative, fractional, non-numeric, and over 1,000), modifier/middle-click routing, hover event payloads, settings persistence, and 10,000-entry paginator bounds. Add a tracked host scenario when a new behavior depends on real Bases data, lifecycle, rendering, CSS, or accessibility semantics.
+Vitest remains authoritative for isolated invalid values (`0`, negative, fractional, non-numeric, and over 1,000), modifier/middle-click routing, hover event payloads, settings persistence, and 10,000-entry/10,000-group paginator bounds. It also verifies that valid page-size changes retain the original first item, because exercising `config.set()` in the host would change `.base` content and violate the gate's byte-for-byte read-only rule. Add a tracked host scenario when a new behavior depends on real Bases data, lifecycle, rendering, CSS, or accessibility semantics.
 
 Residual manual checks are limited to real screen-reader speech, OS-level window focus, hover timing outside the renderer, theme-specific visual judgment, and physical iOS/Android behavior. Use Computer Use only when one of those checks depends on OS dialogs or window chrome. Record the Obsidian version/channel, platform, fixture ID, JSON summary, screenshots, performance observations, and any residual checks relevant to the change.
 
