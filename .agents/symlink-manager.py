@@ -64,7 +64,12 @@ def doctor(repo: Path) -> None:
                 f"{source}; remove a local false override and enable it before installing"
             )
 
-    probe_root = Path(tempfile.mkdtemp(prefix=".agent-scaffold-symlink-", dir=repo.parent))
+    # Probe the target filesystem and permissions. The parent can be read-only
+    # or on another filesystem even when the checkout supports real links.
+    try:
+        probe_root = Path(tempfile.mkdtemp(prefix=".agent-scaffold-symlink-", dir=repo))
+    except OSError as exc:
+        raise ContractError(f"cannot create symlink probe in repository: {exc}") from exc
     file_link = probe_root / "file-link"
     dir_link = probe_root / "dir-link"
     try:
@@ -180,13 +185,6 @@ def validate_destination(
     )
 
 
-def remove_existing(path: Path) -> None:
-    if path.is_symlink() or path.is_file():
-        path.unlink()
-        return
-    raise ContractError(f"refusing to remove unexpected path type: {path}")
-
-
 def create_unique_temp_link(link: Path, resolved_target: Path, target: str):
     for _attempt in range(32):
         candidate = link.with_name(
@@ -227,9 +225,12 @@ def create_relative_link(link: Path, resolved_target: Path, target: str, action:
     try:
         if not temp_link.is_symlink() or read_symlink_target(temp_link) != target:
             raise ContractError(f"failed to materialize a real symlink for {link}")
-        if link.exists() or link.is_symlink():
-            remove_existing(link)
-        os.replace(temp_link, link)
+        try:
+            os.replace(temp_link, link)
+        except OSError as exc:
+            raise ContractError(
+                f"could not atomically replace projection {link}: {exc}"
+            ) from exc
     finally:
         cleanup_created_temp_link(temp_link, temp_identity)
     if not link.is_symlink() or read_symlink_target(link) != target or not link.exists():

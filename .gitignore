@@ -26,3 +26,4 @@ GEMINI.md
 .claude/settings.local.json
 .worktrees/
 .claude/allow-trunk-edit
+.agent-scaffold-symlink-*/

@@ -36,49 +36,50 @@
 - Push the release snapshot to `master` before pushing its tag. The tag workflow validates the committed snapshot, extracts that Changelog section, builds and attests `main.js`, `manifest.json`, and `styles.css`, and creates or repairs the matching GitHub Release.
 - Do not bump versions, create or push tags, or publish a release unless the user explicitly requests that release workflow.
 
-<!-- agent-scaffold:start — managed by the agent-scaffold skill. Edit project prose OUTSIDE these markers; `agent-scaffold upgrade` refreshes this block. -->
-## Agent Harness (Claude Code + Codex)
+<!-- agent-scaffold:start (managed; edit outside) profile=default domains=docs,tools,testing,specs,terminology,git,release,environment -->
+## Agent Harness
 
-This repo carries a vendored, dual-host agent harness. `.agents/` is the single source of truth (SSOT); `.claude/` and `.codex/` are wired to the **same** implementations under `.agents/tools/`.
+`.agents/` is the harness source; `.claude/` and `.codex/` hold generated projections. `CLAUDE.md` links to this contract.
+
+### Session and task context
+
+Honor the user's session entry; prefer task-local implementation/review. Resolve the task checkout and revision; use its `AGENTS.md` chain, terminology, skills, and tool working directories. Pass peers its absolute path and review revision. A shell `cd` does not reload host instructions or permissions; resolve access or guidance conflicts explicitly.
 
 ### Worktree-per-change (hard rule)
 
-**Never edit trunk (`main`) directly** — every change, however small ("just docs" is NOT an exception), starts in its own worktree cut from the trunk tip:
+Never edit the primary worktree, including docs. Reuse an assigned linked worktree; otherwise, if the scaffold owns creation, run `bash .agents/tools/worktree.sh new <name>`.
 
-```bash
-bash .agents/tools/worktree.sh new <name>   # edit inside .worktrees/<name>/  (branch feat|fix|docs|chore/<name>)
-bash .agents/tools/worktree.sh done         # merge back to local trunk (--no-ff) + clean up + ff-only push
-```
+Keep one lifecycle owner. `done --dir <absolute-wt>` merges, ff-only pushes, and removes the worktree; it requires explicit authorization and scaffold ownership, runs outside that worktree, and is not a PR/MR handoff. Leave externally managed worktrees to their owner instead of merging or cleaning them up. Bypass the trunk guard only with explicit user approval.
 
-`.agents/tools/hooks/trunk_edit_guard.sh` (PreToolUse) mechanically blocks edits to tracked files while on trunk. Escape hatch — only when the user explicitly authorizes a trunk edit: `touch .claude/allow-trunk-edit` (auto-expires in 2 h) or `WORKTREE_ALLOW_TRUNK_EDIT=1`.
+Release the owning shell/session's directory handle before removal; a child `cd` cannot release its Windows handle. If `done` reports cleanup pending (exit 3), release the handle and use `cleanup --dir <absolute-wt>` for the empty unregistered `.worktrees/<name>` residue.
 
 ### Authority documents (hard rules)
 
-`AGENTS.md` is the canonical repository-level contract for Agent work. Read and follow the root contract and its applicable nested contract chain before acting; higher-priority instructions still govern.
+`AGENTS.md` is the canonical repository-level Agent contract; read the applicable nested chain before acting. Keep it lean and current; route detail to project docs and nest only for real local differences. Repair durable guidance drift in the same change; follow higher-priority instructions and surface material disagreement instead of guessing. Interpret document status and freshness alongside repository evidence and user intent.
 
-- **Keep it current.** When a durable change affects an Agent-relevant command, invariant, ownership boundary, risk boundary, or navigation path, update or remove the affected contract guidance in the same change. If the detail lives in linked project docs, update it there and keep the contract summary and link accurate.
-- **Keep it lean.** Keep only concise, actionable guidance that changes Agent behavior and is frequently needed or costly to miss. Move explanations, rationale, history, long procedures, examples, and low-frequency detail to project docs and link to it.
-- **Keep scopes honest.** Root rules are project-wide. Create a nested `AGENTS.md` only for a concrete local difference from the nearest ancestor; directory structure alone never justifies one.
-- **Resolve conflicts explicitly.** If applicable instructions conflict, or contract guidance disagrees with verified repository facts, do not guess or silently ignore either. Surface the conflict, follow higher-priority instructions, request owner direction when authority is unclear, and repair stale guidance in the same change when authorized.
+### Project terminology (hard rule)
 
-The authority-document budget hook remains advisory; projects may override its default line and character limits when justified.
+Every Agent, project skill, and subagent uses the declared glossary, else root `CONTEXT-MAP.md`, then `CONTEXT.md`; read only relevant contexts before using project terms. A term and each language equivalent are equally valid names for one concept — use whichever is clearest and do not force one language. Reserve avoided names for history or compatibility. Resolve durable term changes with evidence and owner intent; update the glossary in the same change. Adopt an existing glossary; add definitions as durable concepts are resolved.
 
-### SSOT layout
+### Convention guides
 
-| Path | Role | Commit? |
-|---|---|---|
-| `.agents/skills/<name>/SKILL.md` | project skill source | ✅ |
-| `.agents/subagents/<name>/{metadata.json,instructions.md}` | subagent source | ✅ |
-| `.claude/skills/<name>` | symlink → `.agents/skills/<name>` (CC discovery; Codex reads `.agents/` directly) | ✅ |
-| `.claude/agents/*.md`, `.codex/agents/*.toml` | **generated** subagent projections — do NOT hand-edit | ✅ |
-| `.agents/tools/hooks/` | scaffold-managed hook runtime (doc budget + optional trunk guard) | ✅ |
-| `.agents/tools/worktree.sh` | worktree lifecycle | ✅ |
-| `.claude/allow-trunk-edit` | worktree escape hatch | ❌ ignored |
-| `.claude/settings.local.json` | personal overrides | ❌ ignored |
+Before the matching work, read its generic guide; project documentation and nested contracts win where they are more specific.
 
-- **Add a skill**: edit `.agents/skills/` → run `bash .agents/relink-skills.sh` → commit source + symlink.
-- **Add a subagent** (needs python): edit `.agents/subagents/` → run `python .agents/tools/generate-subagents.py` → commit source + generated. Wire `--check` into the project's own CI or hook manager when desired.
-- **Third-party skills** follow project-owned placement and installation policy. The relinker manages only names sourced from `.agents/skills/`, preserves unrelated entries, and fails on same-name ownership conflicts.
+- Documentation: `.agents/conventions/docs.md`
+- Commands and tools: `.agents/conventions/tools.md`
+- Tests: `.agents/conventions/testing.md`
+- Specifications and design records: `.agents/conventions/specs.md`
+- Glossary changes: `.agents/conventions/terminology.md`
+- Commits and delivery: `.agents/conventions/git.md`
+- Version bumps, tags, and publication: `.agents/tools/release/README.md`
+- Setup and shared environments: `.agents/conventions/environment.md`
 
-**Codex trust**: project-level `.codex/` (config + hooks + agents) only loads for a **trusted** project; until trusted it is silently skipped. Trust once: run `codex` here and accept, or add `[projects."<repo abs path>"] trust_level = "trusted"` to `~/.codex/config.toml`.
+### Sources and projections
+
+- Edit skills in `.agents/skills/`, then run `bash .agents/relink-skills.sh`; commit source and symlinks.
+- Edit subagents in `.agents/subagents/`, then run `python .agents/tools/generate-subagents.py`; commit source and projections.
+- Do not hand-edit host projections or scaffold runtime (`.agents/tools/**`, `.agents/conventions/**`, `.agents/relink-skills.sh`, `.agents/symlink-manager.py`); use `agent-scaffold upgrade`, then `agent-scaffold verify`.
+- **Third-party skills** follow project-owned placement and installation policy; preserve unrelated entries.
+
+For Codex, confirm project trust, agent discovery, and `/hooks` approval; re-review changed definitions. Restore symlink/hardlink targets with Git, not Claude checkpoints.
 <!-- agent-scaffold:end -->
