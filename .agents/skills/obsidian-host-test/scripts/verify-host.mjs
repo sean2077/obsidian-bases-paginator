@@ -566,6 +566,20 @@ async function main() {
 		);
 
 		log("enable Bases and exercise plugin lifecycle");
+		const hostState = await evalJson(
+			'JSON.stringify({restricted:typeof app.plugins.isEnabled==="function"?!app.plugins.isEnabled():false,visibility:document.visibilityState})',
+			"host-preconditions"
+		);
+		assertHost(
+			"host-preconditions",
+			hostState.visibility === "visible",
+			`the Obsidian window is ${String(hostState.visibility)}; bring it to the foreground because hidden or occluded windows drop CDP input and console capture`
+		);
+		assertHost(
+			"host-preconditions",
+			!hostState.restricted,
+			"restricted mode is enabled; turn it off for this disposable vault before running the host gate"
+		);
 		await ensureDebugCapture();
 		debuggerEnabled = true;
 		await cliEventually(["dev:errors", "clear"], "errors-clear");

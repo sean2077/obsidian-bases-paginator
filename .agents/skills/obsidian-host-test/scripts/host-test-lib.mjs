@@ -464,7 +464,16 @@ function buildBase(scenario) {
 	if (scenario.groupBy) {
 		lines.push("    groupBy:", `      property: ${scenario.groupBy}`, "      direction: ASC");
 	}
-	if (scenario.groupOrder !== undefined) lines.push(`    groupOrder: ${JSON.stringify(scenario.groupOrder)}`);
+	if (scenario.groupOrder !== undefined) {
+		// Write the block form Obsidian itself serializes. Opening a Base with
+		// compact flow syntax rewrites the file, which would trip the read-only
+		// content gate even though the plugin never writes to the vault.
+		if (scenario.groupOrder.length === 0) lines.push("    groupOrder: []");
+		else {
+			lines.push("    groupOrder:");
+			for (const key of scenario.groupOrder) lines.push(`      - ${key === null ? "" : key}`);
+		}
+	}
 	const order = baseOrder(scenario);
 	lines.push(order.length === 0 ? "    order: []" : "    order:");
 	for (const property of order) lines.push(`      - ${property}`);

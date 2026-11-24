@@ -88,9 +88,9 @@ The tracked host matrix now contains 16 scenarios. New cases cover manual group 
 
 The full matrix requires Obsidian 1.14.3+ because manual group visibility is a host feature introduced then. The plugin minimum remains 1.12.0. A legacy smoke run remains available for older compatible hosts.
 
-Real Obsidian 1.15.1 validation was attempted in this environment. The official Linux distribution matched its published SHA-256, and `test:host:setup` generated the disposable fixture. However, the environment rejects Unix-domain socket creation with `EPERM`. Both a display-server attempt and Electron startup failed, the latter at `process_singleton_posix.cc` with `socket() failed: Operation not permitted`. Consequently, the official CLI cannot find a running host and the required real-host gate has **not passed**.
+The real-host gate passed on 2026-11-24 on Windows 11 with Obsidian 1.15.1 (installer 1.15.0), using a disposable vault prepared by `test:host:setup`. All 16 scenarios passed, including manual group order, hidden groups, the single null-value group, hidden properties, direct page entry, CDP mouse and keyboard flows, the 390 px mobile render, accessibility-tree roles including `spinbutton`, empty error buffers, and byte-identical vault content. The advisory 1,200-row run opened in about 0.42 s and page transitions stayed near 0.4 s. An earlier Linux attempt could not start a host because the sandbox rejects Unix-domain socket creation; that environment limitation is unrelated to the plugin.
 
-Keep the PR in draft until the real-host gate passes. On a machine running Obsidian, prepare and register a separate disposable vault, enable its CLI, and run:
+On another machine, prepare and register a separate disposable vault, enable its CLI, turn off Restricted Mode for that vault, keep the Obsidian window in the foreground, and run:
 
 ```bash
 npm run test:host:setup -- --target /absolute/path/obsidian-paginator-test-vault

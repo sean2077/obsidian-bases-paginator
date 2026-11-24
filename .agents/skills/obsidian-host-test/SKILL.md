@@ -8,6 +8,7 @@ description: "Verify Bases Paginator changes in a real, running Obsidian app thr
 ## Boundary
 
 - Target only an explicitly named disposable vault. Never infer or use the active or primary vault.
+- Keep the Obsidian window in the foreground with restricted mode off for that vault. Hidden or occluded windows drop CDP input and console capture, and restricted mode silently prevents the community plugin from loading; the runner checks both before driving the view.
 - Keep note, frontmatter, Canvas, and `.base` content byte-for-byte unchanged. The runner may replace only this plugin's installed package and Obsidian-owned workspace/plugin settings.
 - Exercise the real plugin view. A successful `base:query` alone does not verify pagination.
 - Prefer CLI DOM, CDP input/accessibility, console capture, and screenshots. Use Computer Use only for OS dialogs or window chrome; leave real screen-reader and physical-device checks manual.

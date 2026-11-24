@@ -116,9 +116,9 @@ describe("Obsidian host tooling contracts", () => {
 		expect(first.get("Generated/values/Values 0001.md")).toContain("flag: false");
 		expect(first.get("Generated/values/Values 0001.md")).toContain("zero: 0");
 		expect(first.get("Embeds/Grouped.md")).toContain("![[Bases/Grouped.base#Grouped pagination]]");
-		expect(first.get("Bases/Manual groups.base")).toContain('groupOrder: ["Todo","Doing"]');
+		expect(first.get("Bases/Manual groups.base")).toContain("groupOrder:\n      - Todo\n      - Doing\n");
 		expect(first.get("Bases/Hidden groups.base")).toContain("groupOrder: []");
-		expect(first.get("Bases/Null group.base")).toContain("groupOrder: [null]");
+		expect(first.get("Bases/Null group.base")).toContain("groupOrder:\n      - \n");
 		expect(first.get("Generated/null-group/Large 0001.md")).not.toContain("status:");
 		expect(first.get("Bases/Hidden properties.base")).toContain("order: []");
 	});

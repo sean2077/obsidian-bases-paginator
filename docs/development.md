@@ -107,7 +107,7 @@ Prepare the tracked fixture once, or whenever its specification changes. The tar
 npm run test:host:setup -- --target "/absolute/path/to/obsidian-test-vault" --adopt
 ```
 
-Open or register that vault in Obsidian, enable the CLI, and run the authoritative gate:
+Open or register that vault in Obsidian, enable the CLI, turn off Restricted Mode for that vault, keep the window in the foreground, and run the authoritative gate. The runner rejects a hidden window or restricted mode before driving the view because both silently break CDP input, console capture, or plugin loading:
 
 ```bash
 npm run test:host -- --vault obsidian-test-vault --scenarios tests/fixtures/host-vault/scenarios.json
